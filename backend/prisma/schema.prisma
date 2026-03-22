@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  username     String     @unique
+  email        String     @unique
+  passwordHash String?
+  avatarUrl    String?
+  bio          String?
+  createdAt    DateTime   @default(now())
+
+  reviews      Review[]
+  ratings      Rating[]
+  lists        List[]
+  followers    Follow[]   @relation("following")
+  following    Follow[]   @relation("follower")
+  activities   Activity[]
+}
+
+model Media {
+  id          Int        @id @default(autoincrement())
+  tmdbId      Int        @unique
+  title       String
+  posterPath  String?
+  overview    String?
+  releaseDate DateTime?
+
+  reviews     Review[]
+  ratings     Rating[]
+  listItems   ListItem[]
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  content   String
+  createdAt DateTime @default(now())
+  userId    Int
+  mediaId   Int
+  user      User     @relation(fields: [userId], references: [id])
+  media     Media    @relation(fields: [mediaId], references: [id])
+}
+
+model Rating {
+  id      Int   @id @default(autoincrement())
+  score   Float
+  userId  Int
+  mediaId Int
+  user    User  @relation(fields: [userId], references: [id])
+  media   Media @relation(fields: [mediaId], references: [id])
+
+  @@unique([userId, mediaId])
+}
+
+model List {
+  id     Int        @id @default(autoincrement())
+  name   String
+  userId Int
+  user   User       @relation(fields: [userId], references: [id])
+  items  ListItem[]
+}
+
+model ListItem {
+  id      Int   @id @default(autoincrement())
+  listId  Int
+  mediaId Int
+  list    List  @relation(fields: [listId], references: [id])
+  media   Media @relation(fields: [mediaId], references: [id])
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  follower    User @relation("follower", fields: [followerId], references: [id])
+  following   User @relation("following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+}
+
+model Activity {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  actionType String
+  targetType String
+  targetId   Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
