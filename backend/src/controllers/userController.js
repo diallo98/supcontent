@@ -79,4 +79,52 @@ const updateProfile = async (req, res) => {
   }
 }
 
-module.exports = { getProfile, getUserById, updateProfile }
+// Suivre un utilisateur
+const followUser = async (req, res) => {
+  try {
+    const followerId = req.user.userId
+    const followingId = parseInt(req.params.id)
+
+    if (followerId === followingId) {
+      return res.status(400).json({ error: 'Vous ne pouvez pas vous suivre vous-même' })
+    }
+
+    await prisma.follow.create({
+      data: { followerId, followingId }
+    })
+
+    // Enregistrer l'activité
+    await prisma.activity.create({
+      data: {
+        userId: followerId,
+        actionType: 'followed',
+        targetType: 'user',
+        targetId: followingId
+      }
+    })
+
+    res.json({ message: 'Utilisateur suivi avec succès' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+// Ne plus suivre un utilisateur
+const unfollowUser = async (req, res) => {
+  try {
+    const followerId = req.user.userId
+    const followingId = parseInt(req.params.id)
+
+    await prisma.follow.delete({
+      where: {
+        followerId_followingId: { followerId, followingId }
+      }
+    })
+
+    res.json({ message: 'Vous ne suivez plus cet utilisateur' })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+}
+
+module.exports = { getProfile, getUserById, updateProfile, followUser, unfollowUser }
