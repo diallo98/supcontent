@@ -1,27 +1,20 @@
-const express = require('express')
-const cors = require('cors')
-const dotenv = require('dotenv')
+const jwt = require('jsonwebtoken')
 
-const authRoutes = require('./routes/authRoutes')
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
 
-dotenv.config()
+  if (!token) {
+    return res.status(401).json({ error: 'Accès refusé - Token manquant' })
+  }
 
-const app = express()
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Token invalide ou expiré' })
+    }
+    req.user = user
+    next()
+  })
+}
 
-app.use(cors())
-app.use(express.json())
-
-// Routes
-app.use('/api/auth', authRoutes)
-
-// Route de test
-app.get('/', (req, res) => {
-  res.json({ message: 'Bienvenue sur SUPCONTENT API 🎬' })
-})
-
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
-  console.log(`Serveur lancé sur le port ${PORT}`)
-})
-
-module.exports = app
+module.exports = { authenticateToken }
