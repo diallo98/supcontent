@@ -1,16 +1,28 @@
 const express = require('express')
 const router = express.Router()
 const jwt = require('jsonwebtoken')
+const { body } = require('express-validator')
 const passport = require('../middlewares/passport')
 const { register, login } = require('../controllers/authController')
 
-router.post('/register', register)
-router.post('/login', login)
+// Règles de validation pour le register
+const registerRules = [
+  body('username').notEmpty().withMessage('Le username est obligatoire'),
+  body('email').isEmail().withMessage('Email invalide'),
+  body('password').isLength({ min: 6 }).withMessage('Le mot de passe doit faire au moins 6 caractères')
+]
 
-// Lancer la connexion Google
+// Règles de validation pour le login
+const loginRules = [
+  body('email').isEmail().withMessage('Email invalide'),
+  body('password').notEmpty().withMessage('Le mot de passe est obligatoire')
+]
+
+router.post('/register', registerRules, register)
+router.post('/login', loginRules, login)
+
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }))
 
-// Callback après connexion Google
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   (req, res) => {
@@ -19,7 +31,6 @@ router.get('/google/callback',
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
-    // Redirige vers le frontend avec le token
     res.redirect(`http://localhost:5173?token=${token}`)
   }
 )

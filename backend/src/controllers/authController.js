@@ -1,11 +1,18 @@
+require('dotenv').config()
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 const { PrismaClient } = require('@prisma/client')
+const { validationResult } = require('express-validator')
 
 const prisma = new PrismaClient()
 
-// REGISTER
 const register = async (req, res) => {
+  // Vérifier les erreurs de validation
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() })
+  }
+
   try {
     const { username, email, password } = req.body
 
@@ -27,8 +34,13 @@ const register = async (req, res) => {
   }
 }
 
-// LOGIN
 const login = async (req, res) => {
+  // Vérifier les erreurs de validation
+  const errors = validationResult(req)
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() })
+  }
+
   try {
     const { email, password } = req.body
 
