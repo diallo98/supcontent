@@ -19,12 +19,19 @@ const s = {
   section: { marginBottom: '40px' },
   sectionTitle: { fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: '#ccc' },
   btn: { background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' },
+  select: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#f1f1f1', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' },
 }
+
+const currentYear = new Date().getFullYear()
+const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
 
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   const [query, setQuery] = useState(searchParams.get('q') || '')
+  const [yearFilter, setYearFilter] = useState(searchParams.get('year') || '')
+  const [genreFilter, setGenreFilter] = useState(searchParams.get('genre') || '')
+  const [genres, setGenres] = useState([])
   const [results, setResults] = useState([])
   const [popular, setPopular] = useState([])
   const [loading, setLoading] = useState(false)
@@ -35,14 +42,20 @@ export default function SearchPage() {
 
   useEffect(() => {
     api.get('/movies/popular').then(r => setPopular(r.data.results || []))
+    api.get('/movies/genres').then(r => setGenres(r.data || []))
   }, [])
 
+  // Écoute des paramètres d'URL (Permet le chargement sans requête de texte obligatoire)
   useEffect(() => {
-    const q = searchParams.get('q')
-    if (q) { setQuery(q); doSearch(q) }
+    const q = searchParams.get('q') || ''
+    const year = searchParams.get('year') || ''
+    const genre = searchParams.get('genre') || ''
+    setYearFilter(year)
+    setGenreFilter(genre)
+    setQuery(q)
+    if (q || genre || year) doSearch(q, year, genre)
   }, [searchParams])
 
-  // Fermer les suggestions si clic en dehors
   useEffect(() => {
     function handleClick(e) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
@@ -53,11 +66,16 @@ export default function SearchPage() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  async function doSearch(q) {
-    if (!q.trim()) return
+  // Exécution de la recherche dynamique
+  async function doSearch(q, year, genre) {
+    if (!q && !genre && !year) return
     setLoading(true)
     try {
-      const { data } = await api.get('/movies/search', { params: { query: q } })
+      const params = {}
+      if (q) params.query = q
+      if (year) params.year = year
+      if (genre) params.genre = genre
+      const { data } = await api.get('/movies/search', { params })
       setResults(data.results || [])
     } finally {
       setLoading(false)
@@ -89,18 +107,25 @@ export default function SearchPage() {
     navigate(`/movie/${movie.id}`)
   }
 
+  // Soumission du formulaire (Autorise la soumission avec filtres seuls)
   function handleSubmit(e) {
     e.preventDefault()
     setShowSuggestions(false)
-    setSearchParams({ q: query })
+    const params = {}
+    if (query) params.q = query
+    if (yearFilter) params.year = yearFilter
+    if (genreFilter) params.genre = genreFilter
+    if (Object.keys(params).length > 0) setSearchParams(params)
   }
+
+  const hasSearchActive = searchParams.get('q') || searchParams.get('year') || searchParams.get('genre')
 
   return (
     <div style={s.page}>
       <h1 style={s.title}>Recherche de films</h1>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start' }}>
-        <div ref={wrapperRef} style={{ position: 'relative', flex: 1, maxWidth: '500px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div ref={wrapperRef} style={{ position: 'relative', flex: 1, minWidth: '260px', maxWidth: '500px' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '12px' }}>
             <input
               placeholder="Titre d'un film…"
@@ -112,7 +137,6 @@ export default function SearchPage() {
             <button style={s.btn} type="submit">Rechercher</button>
           </form>
 
-          {/* Suggestions */}
           {showSuggestions && suggestions.length > 0 && (
             <div style={{
               position: 'absolute', top: '46px', left: 0, right: 0,
@@ -144,22 +168,41 @@ export default function SearchPage() {
             </div>
           )}
         </div>
+
+        {/* Filtres */}
+        <select style={s.select} value={genreFilter} onChange={e => setGenreFilter(e.target.value)}>
+          <option value="">Tous les genres</option>
+          {genres.map(g => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
+
+        <select style={s.select} value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
+          <option value="">Toutes les années</option>
+          {years.map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
       </div>
 
       {loading && <div style={s.empty}>Recherche en cours…</div>}
 
       {!loading && results.length > 0 && (
         <div style={s.section}>
-          <p style={s.sectionTitle}>Résultats pour « {searchParams.get('q')} »</p>
+          <p style={s.sectionTitle}>
+            {searchParams.get('q') ? `Résultats pour « ${searchParams.get('q')} »` : 'Résultats de votre recherche'}
+          </p>
           <MovieGrid movies={results} />
         </div>
       )}
 
-      {!loading && results.length === 0 && searchParams.get('q') && (
-        <div style={s.empty}>Aucun résultat pour « {searchParams.get('q')} »</div>
+      {!loading && results.length === 0 && hasSearchActive && (
+        <div style={s.empty}>
+          Aucun résultat pour cette recherche.
+        </div>
       )}
 
-      {!searchParams.get('q') && popular.length > 0 && (
+      {!hasSearchActive && popular.length > 0 && (
         <div style={s.section}>
           <p style={s.sectionTitle}>Films populaires</p>
           <MovieGrid movies={popular} />
@@ -181,7 +224,7 @@ function MovieGrid({ movies }) {
           >
             {movie.poster_path
               ? <img src={`${POSTER}${movie.poster_path}`} alt={movie.title} style={s.poster} />
-              : <div style={s.noPoster}>🎬</div>}
+              : <div style={s.noPoster}>?</div>}
             <div style={s.info}>
               <div style={s.movieTitle}>{movie.title}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

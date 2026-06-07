@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 
@@ -59,7 +60,7 @@ const styles = {
 
 function timeAgo(date) {
   const diff = (Date.now() - new Date(date)) / 1000
-  if (diff < 60) return 'À l’instant'
+  if (diff < 60) return 'À l\'instant'
   if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`
   if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)} h`
   return `Il y a ${Math.floor(diff / 86400)} j`
@@ -67,6 +68,7 @@ function timeAgo(date) {
 
 export default function Navbar() {
   const { user, logout } = useAuth()
+  const { theme, toggle } = useTheme()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [unreadCount, setUnreadCount] = useState(0)
@@ -149,7 +151,6 @@ export default function Navbar() {
             )}
 
             <div style={styles.bellWrapper} ref={bellRef}>
-              {/* Émoji cloche inséré à la place du texte brut */}
               <button style={styles.bellBtn} onClick={handleBellClick}>
                 &#128276;
               </button>
@@ -174,6 +175,14 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
+            <button onClick={toggle} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px' }}>
+              <div style={{
+                width: '20px', height: '20px', borderRadius: '50%',
+                background: 'linear-gradient(90deg, #f1f1f1 50%, #111 50%)',
+                border: '1px solid #555'
+              }} />
+            </button>
 
             <Link to="/me">
               <div style={styles.avatar}>

@@ -6,19 +6,37 @@ const prisma = new PrismaClient()
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3'
 const TMDB_API_KEY = process.env.TMDB_API_KEY
 
-// Rechercher des films
+// Rechercher des films (Bascule dynamique entre Search et Discover selon les filtres)
 const searchMovies = async (req, res) => {
   try {
-    const { query } = req.query
+    const { query, year, genre } = req.query
+    let endpoint, params
 
-    if (!query) {
-      return res.status(400).json({ error: 'Paramètre query manquant' })
+    if (genre && !query) {
+      // Discover par genre sans recherche textuelle
+      endpoint = `${TMDB_BASE_URL}/discover/movie`
+      params = {
+        api_key: TMDB_API_KEY,
+        language: 'fr-FR',
+        with_genres: genre,
+        primary_release_year: year || undefined,
+        sort_by: 'popularity.desc',
+      }
+    } else {
+      // Recherche textuelle classique (avec ou sans année)
+      if (!query) {
+        return res.status(400).json({ error: 'Paramètre query manquant' })
+      }
+      endpoint = `${TMDB_BASE_URL}/search/movie`
+      params = {
+        api_key: TMDB_API_KEY,
+        language: 'fr-FR',
+        query,
+        year: year || undefined,
+      }
     }
 
-    const response = await axios.get(`${TMDB_BASE_URL}/search/movie`, {
-      params: { api_key: TMDB_API_KEY, query, language: 'fr-FR' }
-    })
-
+    const response = await axios.get(endpoint, { params })
     res.json(response.data)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -74,4 +92,16 @@ const getPopularMovies = async (req, res) => {
   }
 }
 
-module.exports = { searchMovies, getMovieById, getPopularMovies }
+// Récupérer la liste des genres depuis TMDB
+const getGenres = async (req, res) => {
+  try {
+    const { data } = await axios.get(`${TMDB_BASE_URL}/genre/movie/list`, {
+      params: { api_key: TMDB_API_KEY, language: 'fr-FR' }
+    })
+    return res.json(data.genres)
+  } catch (err) {
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+module.exports = { searchMovies, getMovieById, getPopularMovies, getGenres }

@@ -46,6 +46,21 @@ export default function ProfilePage() {
     }).finally(() => setLoading(false))
   }, [id, isMe])
 
+  // Fonction d'exportation RGPD insérée en haut
+  const handleExport = async (format) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/export?format=${format}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `supcontent-export.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   async function saveProfile() {
     setSaving(true)
     try {
@@ -181,6 +196,15 @@ export default function ProfilePage() {
           <button style={s.btn} onClick={saveProfile} disabled={saving}>
             {saving ? 'Sauvegarde...' : 'Sauvegarder'}
           </button>
+
+          {/* Section d'exportation RGPD ajoutée juste après le bouton Sauvegarder */}
+          <div style={{ marginTop: '24px', borderTop: '1px solid #2e2e2e', paddingTop: '20px' }}>
+            <div style={s.label}>Mes données (RGPD)</div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button style={s.btnOutline} onClick={() => handleExport('json')}>Exporter en JSON</button>
+              <button style={s.btnOutline} onClick={() => handleExport('csv')}>Exporter en CSV</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

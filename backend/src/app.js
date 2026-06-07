@@ -16,6 +16,7 @@ const likeRoutes = require('./routes/likeRoutes')
 const messageRoutes = require('./routes/messageRoutes')
 const moderationRoutes = require('./routes/moderationRoutes') // ← Ligne ajoutée
 const notificationRoutes = require('./routes/notificationRoutes')
+const exportRoutes = require('./routes/exportRoutes');
 
 dotenv.config()
 
@@ -45,6 +46,7 @@ app.use('/api/likes', likeRoutes)
 app.use('/api/messages', messageRoutes)
 app.use('/api/moderation', moderationRoutes) // ← Ligne ajoutée
 app.use('/api/notifications', notificationRoutes)
+app.use('/api/export', exportRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Bienvenue sur SUPCONTENT API' })
