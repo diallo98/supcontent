@@ -8,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id            Int           @id @default(autoincrement())
-  username      String        @unique
-  email         String        @unique
-  passwordHash  String?
-  avatarUrl     String?
-  bio           String?
-  role          String        @default("user")
-  createdAt     DateTime      @default(now())
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  email        String    @unique
+  passwordHash String?
+  avatarUrl    String?
+  bio          String?
+  role         String    @default("user")
+  createdAt    DateTime  @default(now())
 
   reviews       Review[]
   ratings       Rating[]
@@ -32,17 +32,17 @@ model User {
   sentMessages         Message[]
   
   reportsMade          Report[]       @relation("ReportsMade")
-  notifications Notification[]
+  notifications        Notification[]
 }
 
 model Media {
-  id            Int           @id @default(autoincrement())
-  tmdbId        Int           @unique
-  title         String
-  posterPath    String?
-  overview      String?
-  releaseDate   DateTime?
-  runtime       Int?          
+  id          Int       @id @default(autoincrement())
+  tmdbId      Int       @unique
+  title       String
+  posterPath  String?
+  overview    String?
+  releaseDate DateTime?
+  runtime     Int?          
 
   reviews       Review[]
   ratings       Rating[]
@@ -53,7 +53,7 @@ model Media {
 model Review {
   id        Int          @id @default(autoincrement())
   content   String
-  featured  Boolean      @default(false) // ← Champ ajouté ici
+  featured  Boolean      @default(false)
   createdAt DateTime     @default(now())
   userId    Int
   mediaId   Int
@@ -135,13 +135,13 @@ model Follow {
 }
 
 model Activity {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  actionType  String
-  targetType  String
-  targetId    Int
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  actionType String
+  targetType String
+  targetId   Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
 }
 
 model Conversation {
@@ -167,14 +167,15 @@ model Message {
 }
 
 model Report {
-  id          Int      @id @default(autoincrement())
-  reason      String
-  createdAt   DateTime @default(now())
-  reporterId  Int
-  reviewId    Int
-  reporter    User     @relation("ReportsMade", fields: [reporterId], references: [id])
-  review      Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  id         Int      @id @default(autoincrement())
+  reason     String
+  createdAt  DateTime @default(now())
+  reporterId Int
+  reviewId   Int
+  reporter   User     @relation("ReportsMade", fields: [reporterId], references: [id])
+  review     Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
+
 model Notification {
   id        Int      @id @default(autoincrement())
   type      String   // "like", "comment", "follow"

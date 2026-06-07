@@ -28,6 +28,8 @@ const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  
+  // États existants (Films)
   const [query, setQuery] = useState(searchParams.get('q') || '')
   const [yearFilter, setYearFilter] = useState(searchParams.get('year') || '')
   const [genreFilter, setGenreFilter] = useState(searchParams.get('genre') || '')
@@ -40,12 +42,18 @@ export default function SearchPage() {
   const suggestTimeout = useRef(null)
   const wrapperRef = useRef(null)
 
+  // Nouveaux états (Listes)
+  const [tab, setTab] = useState('movies') // 'movies' | 'lists'
+  const [listQuery, setListQuery] = useState('')
+  const [publicLists, setPublicLists] = useState([])
+  const [listsLoading, setListsLoading] = useState(false)
+
   useEffect(() => {
     api.get('/movies/popular').then(r => setPopular(r.data.results || []))
     api.get('/movies/genres').then(r => setGenres(r.data || []))
   }, [])
 
-  // Écoute des paramètres d'URL (Permet le chargement sans requête de texte obligatoire)
+  // Écoute des paramètres d'URL pour la recherche de films
   useEffect(() => {
     const q = searchParams.get('q') || ''
     const year = searchParams.get('year') || ''
@@ -66,7 +74,18 @@ export default function SearchPage() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Exécution de la recherche dynamique
+  // Fonction de recherche de listes
+  async function searchLists(q) {
+    setListsLoading(true)
+    try {
+      const { data } = await api.get('/lists/public', { params: { q } })
+      setPublicLists(data)
+    } finally {
+      setListsLoading(false)
+    }
+  }
+
+  // Exécution de la recherche de films dynamique
   async function doSearch(q, year, genre) {
     if (!q && !genre && !year) return
     setLoading(true)
@@ -107,7 +126,7 @@ export default function SearchPage() {
     navigate(`/movie/${movie.id}`)
   }
 
-  // Soumission du formulaire (Autorise la soumission avec filtres seuls)
+  // Soumission du formulaire films
   function handleSubmit(e) {
     e.preventDefault()
     setShowSuggestions(false)
@@ -124,88 +143,152 @@ export default function SearchPage() {
     <div style={s.page}>
       <h1 style={s.title}>Recherche de films</h1>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <div ref={wrapperRef} style={{ position: 'relative', flex: 1, minWidth: '260px', maxWidth: '500px' }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '12px' }}>
-            <input
-              placeholder="Titre d'un film…"
-              value={query}
-              onChange={handleQueryChange}
-              onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-              style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
-            />
-            <button style={s.btn} type="submit">Rechercher</button>
-          </form>
-
-          {showSuggestions && suggestions.length > 0 && (
-            <div style={{
-              position: 'absolute', top: '46px', left: 0, right: 0,
-              background: '#1e1e1e', border: '1px solid #333', borderRadius: '8px',
-              zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden'
-            }}>
-              {suggestions.map(movie => (
-                <div
-                  key={movie.id}
-                  onClick={() => handleSelectSuggestion(movie)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#2a2a2a'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  {movie.poster_path ? (
-                    <img src={`${POSTER_SMALL}${movie.poster_path}`} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
-                  ) : (
-                    <div style={{ width: '32px', height: '48px', background: '#333', borderRadius: '4px', flexShrink: 0 }} />
-                  )}
-                  <div>
-                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{movie.title}</div>
-                    <div style={{ fontSize: '12px', color: '#888' }}>{movie.release_date?.slice(0, 4) || '—'}</div>
-                  </div>
-                  {movie.vote_average > 0 && (
-                    <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#ffd700' }}>★ {movie.vote_average.toFixed(1)}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Filtres */}
-        <select style={s.select} value={genreFilter} onChange={e => setGenreFilter(e.target.value)}>
-          <option value="">Tous les genres</option>
-          {genres.map(g => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </select>
-
-        <select style={s.select} value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
-          <option value="">Toutes les années</option>
-          {years.map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
+      {/* Système d'onglets */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+        <button
+          onClick={() => setTab('movies')}
+          style={{ background: tab === 'movies' ? '#e50914' : '#1a1a1a', color: '#fff', border: '1px solid #2e2e2e', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          Films
+        </button>
+        <button
+          onClick={() => { setTab('lists'); searchLists('') }}
+          style={{ background: tab === 'lists' ? '#e50914' : '#1a1a1a', color: '#fff', border: '1px solid #2e2e2e', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+        >
+          Listes publiques
+        </button>
       </div>
 
-      {loading && <div style={s.empty}>Recherche en cours…</div>}
+      {/* Vue Onglet : FILMS */}
+      {tab === 'movies' && (
+        <>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div ref={wrapperRef} style={{ position: 'relative', flex: 1, minWidth: '260px', maxWidth: '500px' }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  placeholder="Titre d'un film…"
+                  value={query}
+                  onChange={handleQueryChange}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+                />
+                <button style={s.btn} type="submit">Rechercher</button>
+              </form>
 
-      {!loading && results.length > 0 && (
-        <div style={s.section}>
-          <p style={s.sectionTitle}>
-            {searchParams.get('q') ? `Résultats pour « ${searchParams.get('q')} »` : 'Résultats de votre recherche'}
-          </p>
-          <MovieGrid movies={results} />
-        </div>
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '46px', left: 0, right: 0,
+                  background: '#1e1e1e', border: '1px solid #333', borderRadius: '8px',
+                  zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden'
+                }}>
+                  {suggestions.map(movie => (
+                    <div
+                      key={movie.id}
+                      onClick={() => handleSelectSuggestion(movie)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#2a2a2a'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {movie.poster_path ? (
+                        <img src={`${POSTER_SMALL}${movie.poster_path}`} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: '32px', height: '48px', background: '#333', borderRadius: '4px', flexShrink: 0 }} />
+                      )}
+                      <div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{movie.title}</div>
+                        <div style={{ fontSize: '12px', color: '#888' }}>{movie.release_date?.slice(0, 4) || '—'}</div>
+                      </div>
+                      {movie.vote_average > 0 && (
+                        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#ffd700' }}>★ {movie.vote_average.toFixed(1)}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Filtres Films */}
+            <select style={s.select} value={genreFilter} onChange={e => setGenreFilter(e.target.value)}>
+              <option value="">Tous les genres</option>
+              {genres.map(g => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+
+            <select style={s.select} value={yearFilter} onChange={e => setYearFilter(e.target.value)}>
+              <option value="">Toutes les années</option>
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          {loading && <div style={s.empty}>Recherche en cours…</div>}
+
+          {!loading && results.length > 0 && (
+            <div style={s.section}>
+              <p style={s.sectionTitle}>
+                {searchParams.get('q') ? `Résultats pour « ${searchParams.get('q')} »` : 'Résultats de votre recherche'}
+              </p>
+              <MovieGrid movies={results} />
+            </div>
+          )}
+
+          {!loading && results.length === 0 && hasSearchActive && (
+            <div style={s.empty}>Aucun résultat pour cette recherche.</div>
+          )}
+
+          {!hasSearchActive && popular.length > 0 && (
+            <div style={s.section}>
+              <p style={s.sectionTitle}>Films populaires</p>
+              <MovieGrid movies={popular} />
+            </div>
+          )}
+        </>
       )}
 
-      {!loading && results.length === 0 && hasSearchActive && (
-        <div style={s.empty}>
-          Aucun résultat pour cette recherche.
-        </div>
-      )}
+      {/* Vue Onglet : LISTES PUBLIQUES */}
+      {tab === 'lists' && (
+        <div>
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+            <input
+              placeholder="Rechercher une liste..."
+              value={listQuery}
+              onChange={e => setListQuery(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && searchLists(listQuery)}
+              style={{ flex: 1, maxWidth: '400px', background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+            />
+            <button style={s.btn} onClick={() => searchLists(listQuery)}>Rechercher</button>
+          </div>
 
-      {!hasSearchActive && popular.length > 0 && (
-        <div style={s.section}>
-          <p style={s.sectionTitle}>Films populaires</p>
-          <MovieGrid movies={popular} />
+          {listsLoading && <div style={s.empty}>Recherche en cours…</div>}
+
+          {!listsLoading && publicLists.length === 0 && (
+            <div style={s.empty}>Aucune liste publique trouvée.</div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {publicLists.map(list => (
+              <div key={list.id} style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '20px' }}>
+                <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '6px' }}>{list.name}</div>
+                <div style={{ fontSize: '13px', color: '#888', marginBottom: '10px' }}>
+                  Par {list.user?.username || 'Anonyme'} · {list.items.length} film{list.items.length !== 1 ? 's' : ''}
+                </div>
+                {list.items.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {list.items.slice(0, 5).map(item => (
+                      <span key={item.id} style={{ background: '#242424', border: '1px solid #333', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: '#aaa' }}>
+                        {item.media?.title || `Film #${item.mediaId}`}
+                      </span>
+                    ))}
+                    {list.items.length > 5 && (
+                      <span style={{ fontSize: '12px', color: '#555', padding: '4px 0' }}>+{list.items.length - 5} autres</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

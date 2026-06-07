@@ -107,6 +107,7 @@ const getMyLists = async (req, res) => {
   }
 };
 
+// Modifier la visibilité d'une liste
 const updateList = async (req, res) => {
   const listId = parseInt(req.params.listId)
   const { isPublic } = req.body
@@ -128,4 +129,35 @@ const updateList = async (req, res) => {
   }
 }
 
-module.exports = { createList, getListsByUser, addMovieToList, deleteList, getMyLists, updateList };
+// Rechercher des listes publiques
+const searchPublicLists = async (req, res) => {
+  const { q } = req.query
+  try {
+    const lists = await prisma.list.findMany({
+      where: {
+        isPublic: true,
+        ...(q ? { name: { contains: q, mode: 'insensitive' } } : {})
+      },
+      orderBy: { id: 'desc' },
+      take: 20,
+      include: {
+        user: { select: { id: true, username: true } },
+        items: true
+      }
+    })
+    return res.json(lists)
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+module.exports = { 
+  createList, 
+  getListsByUser, 
+  addMovieToList, 
+  deleteList, 
+  getMyLists, 
+  updateList, 
+  searchPublicLists 
+};
