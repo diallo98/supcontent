@@ -8,43 +8,80 @@ datasource db {
 }
 
 model User {
-  id           Int        @id @default(autoincrement())
-  username     String     @unique
-  email        String     @unique
-  passwordHash String?
-  avatarUrl    String?
-  bio          String?
-  createdAt    DateTime   @default(now())
+  id            Int           @id @default(autoincrement())
+  username      String        @unique
+  email         String        @unique
+  passwordHash  String?
+  avatarUrl     String?
+  bio           String?
+  role          String        @default("user")
+  createdAt     DateTime      @default(now())
 
-  reviews      Review[]
-  ratings      Rating[]
-  lists        List[]
-  followers    Follow[]   @relation("following")
-  following    Follow[]   @relation("follower")
-  activities   Activity[]
+  reviews       Review[]
+  ratings       Rating[]
+  lists         List[]
+  followers     Follow[]      @relation("following")
+  following     Follow[]      @relation("follower")
+  activities    Activity[]
+  watchStatuses WatchStatus[]
+  comments      Comment[]     
+  reviewLikes   ReviewLike[]  
+
+  conversationsAsUser1 Conversation[] @relation("ConvUser1")
+  conversationsAsUser2 Conversation[] @relation("ConvUser2")
+  sentMessages         Message[]
+  
+  reportsMade          Report[]       @relation("ReportsMade")
+  notifications Notification[]
 }
 
 model Media {
-  id          Int        @id @default(autoincrement())
-  tmdbId      Int        @unique
-  title       String
-  posterPath  String?
-  overview    String?
-  releaseDate DateTime?
+  id            Int           @id @default(autoincrement())
+  tmdbId        Int           @unique
+  title         String
+  posterPath    String?
+  overview      String?
+  releaseDate   DateTime?
+  runtime       Int?          
 
-  reviews     Review[]
-  ratings     Rating[]
-  listItems   ListItem[]
+  reviews       Review[]
+  ratings       Rating[]
+  listItems     ListItem[]
+  watchStatuses WatchStatus[]
 }
 
 model Review {
+  id        Int          @id @default(autoincrement())
+  content   String
+  featured  Boolean      @default(false) // ← Champ ajouté ici
+  createdAt DateTime     @default(now())
+  userId    Int
+  mediaId   Int
+  user      User         @relation(fields: [userId], references: [id])
+  media     Media        @relation(fields: [mediaId], references: [id])
+  comments  Comment[]    
+  likes     ReviewLike[] 
+  
+  reports   Report[]     
+}
+
+model ReviewLike {
+  userId   Int
+  reviewId Int
+  user     User   @relation(fields: [userId], references: [id])
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@id([userId, reviewId])
+}
+
+model Comment {
   id        Int      @id @default(autoincrement())
   content   String
   createdAt DateTime @default(now())
   userId    Int
-  mediaId   Int
+  reviewId  Int
   user      User     @relation(fields: [userId], references: [id])
-  media     Media    @relation(fields: [mediaId], references: [id])
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 }
 
 model Rating {
@@ -59,11 +96,12 @@ model Rating {
 }
 
 model List {
-  id     Int        @id @default(autoincrement())
-  name   String
-  userId Int
-  user   User       @relation(fields: [userId], references: [id])
-  items  ListItem[]
+  id       Int        @id @default(autoincrement())
+  name     String
+  isPublic Boolean    @default(true)
+  userId   Int
+  user     User       @relation(fields: [userId], references: [id])
+  items    ListItem[]
 }
 
 model ListItem {
@@ -72,6 +110,19 @@ model ListItem {
   mediaId Int
   list    List  @relation(fields: [listId], references: [id])
   media   Media @relation(fields: [mediaId], references: [id])
+}
+
+model WatchStatus {
+  id        Int      @id @default(autoincrement())
+  status    String   
+  userId    Int
+  mediaId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+  media     Media    @relation(fields: [mediaId], references: [id])
+
+  @@unique([userId, mediaId])
 }
 
 model Follow {
@@ -84,11 +135,52 @@ model Follow {
 }
 
 model Activity {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  actionType String
-  targetType String
-  targetId   Int
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id])
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  actionType  String
+  targetType  String
+  targetId    Int
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  user1Id   Int
+  user2Id   Int
+  user1     User     @relation("ConvUser1", fields: [user1Id], references: [id])
+  user2     User     @relation("ConvUser2", fields: [user2Id], references: [id])
+  messages  Message[]
+
+  @@unique([user1Id, user2Id])
+}
+
+model Message {
+  id             Int          @id @default(autoincrement())
+  content        String
+  createdAt      DateTime     @default(now())
+  senderId       Int
+  conversationId Int
+  sender         User         @relation(fields: [senderId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+}
+
+model Report {
+  id          Int      @id @default(autoincrement())
+  reason      String
+  createdAt   DateTime @default(now())
+  reporterId  Int
+  reviewId    Int
+  reporter    User     @relation("ReportsMade", fields: [reporterId], references: [id])
+  review      Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String   // "like", "comment", "follow"
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
 }

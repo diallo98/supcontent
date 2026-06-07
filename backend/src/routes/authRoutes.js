@@ -26,12 +26,13 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   (req, res) => {
+    // Payload mis à jour avec le rôle pour l'authentification Google
     const token = jwt.sign(
-      { userId: req.user.id, email: req.user.email },
+      { userId: req.user.id, email: req.user.email, role: req.user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
-    res.redirect(`http://localhost:5173?token=${token}`)
+    res.redirect(`${process.env.FRONTEND_URL}?token=${token}`)
   }
 )
 

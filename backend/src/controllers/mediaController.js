@@ -25,27 +25,33 @@ const searchMovies = async (req, res) => {
   }
 }
 
-// Voir la fiche détail d'un film
+// Voir la fiche détail d'un film (Avec crédits append et synchronisation du runtime)
 const getMovieById = async (req, res) => {
   try {
     const { id } = req.params
 
+    // Modification ici : Ajout de append_to_response pour inclure les crédits (réalisateur/acteurs)
     const response = await axios.get(`${TMDB_BASE_URL}/movie/${id}`, {
-      params: { api_key: TMDB_API_KEY, language: 'fr-FR' }
+      params: { 
+        api_key: TMDB_API_KEY, 
+        language: 'fr-FR', 
+        append_to_response: 'credits' 
+      }
     })
 
     const movie = response.data
 
-    // On sauvegarde le film en BDD pour ne pas refaire l'appel à chaque fois
+    // On sauvegarde le film en BDD (Inclusion du runtime pour rester synchro !)
     await prisma.media.upsert({
       where: { tmdbId: movie.id },
-      update: {},
+      update: { runtime: movie.runtime || undefined },
       create: {
         tmdbId: movie.id,
         title: movie.title,
         posterPath: movie.poster_path,
         overview: movie.overview,
-        releaseDate: movie.release_date ? new Date(movie.release_date) : null
+        releaseDate: movie.release_date ? new Date(movie.release_date) : null,
+        runtime: movie.runtime || null // Ajout du runtime à la création en BDD
       }
     })
 

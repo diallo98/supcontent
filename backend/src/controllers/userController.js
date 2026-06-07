@@ -1,5 +1,6 @@
 require('dotenv').config()
 const { PrismaClient } = require('@prisma/client')
+const { createNotification } = require('./notificationController')
 
 const prisma = new PrismaClient()
 
@@ -14,6 +15,7 @@ const getProfile = async (req, res) => {
         email: true,
         avatarUrl: true,
         bio: true,
+        role: true,
         createdAt: true,
         _count: {
           select: {
@@ -50,7 +52,7 @@ const getUserById = async (req, res) => {
         }
       }
     })
-    if (!user) return res.status(404).json({ error: 'Utilisateur non trouvé' })
+    if (!user) return res.status(404).json({ error: 'Utilisateur non trouve' })
     res.json(user)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -61,7 +63,6 @@ const getUserById = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { username, bio, avatarUrl } = req.body
-
     const user = await prisma.user.update({
       where: { id: req.user.userId },
       data: { username, bio, avatarUrl },
@@ -86,14 +87,21 @@ const followUser = async (req, res) => {
     const followingId = parseInt(req.params.id)
 
     if (followerId === followingId) {
-      return res.status(400).json({ error: 'Vous ne pouvez pas vous suivre vous-même' })
+      return res.status(400).json({ error: 'Vous ne pouvez pas vous suivre vous-meme' })
+    }
+
+    const existing = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId, followingId } }
+    })
+
+    if (existing) {
+      return res.status(400).json({ error: 'Vous suivez deja cet utilisateur' })
     }
 
     await prisma.follow.create({
       data: { followerId, followingId }
     })
 
-    // Enregistrer l'activité
     await prisma.activity.create({
       data: {
         userId: followerId,
@@ -103,7 +111,18 @@ const followUser = async (req, res) => {
       }
     })
 
-    res.json({ message: 'Utilisateur suivi avec succès' })
+    // Notifier l'utilisateur suivi
+    const follower = await prisma.user.findUnique({
+      where: { id: followerId },
+      select: { username: true }
+    })
+    await createNotification(
+      followingId,
+      'follow',
+      `${follower.username} a commence a vous suivre.`
+    )
+
+    res.json({ message: 'Utilisateur suivi avec succes' })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -116,9 +135,7 @@ const unfollowUser = async (req, res) => {
     const followingId = parseInt(req.params.id)
 
     await prisma.follow.delete({
-      where: {
-        followerId_followingId: { followerId, followingId }
-      }
+      where: { followerId_followingId: { followerId, followingId } }
     })
 
     res.json({ message: 'Vous ne suivez plus cet utilisateur' })
@@ -127,4 +144,57 @@ const unfollowUser = async (req, res) => {
   }
 }
 
-module.exports = { getProfile, getUserById, updateProfile, followUser, unfollowUser }
+const searchUsers = async (req, res) => {
+  const { q } = req.query
+  if (!q?.trim()) return res.json([])
+
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        username: { contains: q.trim(), mode: 'insensitive' }
+      },
+      select: {
+        id: true,
+        username: true,
+        bio: true,
+        avatarUrl: true,
+        _count: { select: { followers: true } }
+      },
+      take: 20
+    })
+    return res.json(users)
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+const getFollowers = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id)
+    const follows = await prisma.follow.findMany({
+      where: { followingId: userId },
+      include: { follower: { select: { id: true, username: true, avatarUrl: true } } }
+    })
+    res.json(follows.map(f => f.follower))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+const getFollowing = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id)
+    const follows = await prisma.follow.findMany({
+      where: { followerId: userId },
+      include: { following: { select: { id: true, username: true, avatarUrl: true } } }
+    })
+    res.json(follows.map(f => f.following))
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
+
+module.exports = { getProfile, getUserById, updateProfile, followUser, unfollowUser, searchUsers, getFollowers, getFollowing }

@@ -54,8 +54,9 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Email ou mot de passe incorrect' })
     }
 
+    // Payload mis à jour avec le rôle de l'utilisateur :
     const token = jwt.sign(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     )
