@@ -8,15 +8,15 @@ const POSTER = 'https://image.tmdb.org/t/p/w92'
 const s = {
   page: { maxWidth: '700px', margin: '0 auto', padding: '40px 24px' },
   title: { fontSize: '22px', fontWeight: 700, marginBottom: '24px' },
-  card: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '18px 20px', marginBottom: '12px', display: 'flex', gap: '14px', alignItems: 'flex-start' },
-  avatar: { width: '40px', height: '40px', borderRadius: '50%', background: '#e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', flexShrink: 0 },
-  action: { fontSize: '14px', color: '#ccc', lineHeight: 1.5 },
-  time: { fontSize: '12px', color: '#555', marginTop: '4px' },
-  username: { color: '#fff', fontWeight: 600 },
-  target: { color: '#e50914', fontWeight: 600 },
-  empty: { textAlign: 'center', padding: '60px', color: '#555' },
-  welcome: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '32px', textAlign: 'center', marginBottom: '24px' },
-  btn: { background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'inline-block', marginTop: '16px' },
+  card: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '18px 20px', marginBottom: '12px', display: 'flex', gap: '14px', alignItems: 'flex-start' },
+  avatar: { width: '40px', height: '40px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px', flexShrink: 0, color: '#fff' },
+  action: { fontSize: '14px', color: 'var(--text)', lineHeight: 1.5 },
+  time: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' },
+  username: { color: 'var(--text)', fontWeight: 600 },
+  target: { color: 'var(--accent)', fontWeight: 600 },
+  empty: { textAlign: 'center', padding: '60px', color: 'var(--text-muted)' },
+  welcome: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '32px', textAlign: 'center', marginBottom: '24px' },
+  btn: { background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 22px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', display: 'inline-block', marginTop: '16px' },
 }
 
 function timeAgo(date) {
@@ -57,7 +57,7 @@ export default function FeedPage() {
         <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>
           Bienvenue, {user?.username} !
         </h2>
-        <p style={{ color: '#888', fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '400px', margin: '0 auto' }}>
           Explore des films, écris des critiques et suis d'autres cinéphiles pour voir leur activité ici.
         </p>
         <Link to="/search">
@@ -66,11 +66,11 @@ export default function FeedPage() {
       </div>
 
       {/* Placeholder fil d'actu — sera alimenté quand le backend social sera branché */}
-      <div style={{ ...s.empty, background: '#1a1a1a', borderRadius: '10px', border: '1px solid #2e2e2e' }}>
+      <div style={{ ...s.empty, background: 'var(--bg2)', borderRadius: '10px', border: '1px solid var(--border)' }}>
         <div style={{ fontSize: '36px', marginBottom: '12px' }}></div>
-        <p style={{ color: '#666', fontSize: '14px' }}>
-          Le fil d'actu s'animera quand tu suis des membres.<br />
-          <Link to="/search" style={{ color: '#e50914' }}>Commence par explorer des films →</Link>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+          Le fil d'actu s'animera quand tu suivras des membres.<br />
+          <Link to="/search" style={{ color: 'var(--accent)' }}>Commence par explorer des films →</Link>
         </p>
       </div>
     </div>

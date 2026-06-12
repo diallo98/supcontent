@@ -197,4 +197,20 @@ const getFollowing = async (req, res) => {
   }
 }
 
-module.exports = { getProfile, getUserById, updateProfile, followUser, unfollowUser, searchUsers, getFollowers, getFollowing }
+// Mettre à jour l'avatar (photo de profil)
+const updateAvatar = async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu' });
+  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+  try {
+    await prisma.user.update({
+      where: { id: req.user.userId },
+      data: { avatarUrl }
+    });
+    return res.json({ avatarUrl });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Erreur serveur' });
+  }
+};
+
+module.exports = { getProfile, getUserById, updateProfile, followUser, unfollowUser, searchUsers, getFollowers, getFollowing, updateAvatar }

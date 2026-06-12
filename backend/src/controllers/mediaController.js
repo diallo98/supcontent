@@ -103,5 +103,23 @@ const getGenres = async (req, res) => {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
+const getMovieVideos = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { data } = await axios.get(`${TMDB_BASE_URL}/movie/${id}/videos`, {
+      params: { api_key: TMDB_API_KEY, language: 'fr-FR' }
+    })
+    let results = data.results || []
+    if (results.length === 0) {
+      const fallback = await axios.get(`${TMDB_BASE_URL}/movie/${id}/videos`, {
+        params: { api_key: TMDB_API_KEY, language: 'en-US' }
+      })
+      results = fallback.data.results || []
+    }
+    return res.json(results)
+  } catch (err) {
+    return res.status(500).json({ error: 'Erreur serveur' })
+  }
+}
 
-module.exports = { searchMovies, getMovieById, getPopularMovies, getGenres }
+module.exports = { searchMovies, getMovieById, getPopularMovies, getGenres, getMovieVideos }

@@ -55,11 +55,11 @@ export default function ListsPage() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 24px', color: '#fff' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 24px', color: 'var(--text)' }}>
       <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '32px' }}>Mes listes</h1>
 
       {/* Créer une liste */}
-      <div style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
+      <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Créer une nouvelle liste</h3>
         <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
           <input
@@ -67,12 +67,12 @@ export default function ListsPage() {
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleCreate()}
             placeholder="Nom de la liste (ex: Films d'horreur préférés)"
-            style={{ flex: 1, background: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit' }}
+            style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit' }}
           />
           <button
             onClick={handleCreate}
             disabled={creating || !newName.trim()}
-            style={{ background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'not-allowed', opacity: newName.trim() ? 1 : 0.5, whiteSpace: 'nowrap' }}
+            style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'not-allowed', opacity: newName.trim() ? 1 : 0.5, whiteSpace: 'nowrap' }}
           >
             {creating ? 'Création…' : '+ Créer'}
           </button>
@@ -83,30 +83,30 @@ export default function ListsPage() {
           <button
             onClick={() => setNewIsPublic(v => !v)}
             style={{
-              background: newIsPublic ? '#4caf50' : '#444',
+              background: newIsPublic ? '#4caf50' : 'var(--border)',
               color: '#fff', border: 'none', borderRadius: '20px',
               padding: '4px 14px', fontSize: '12px', fontWeight: 600, cursor: 'pointer'
             }}
           >
             {newIsPublic ? 'Publique' : 'Privée'}
           </button>
-          <span style={{ fontSize: '12px', color: '#666' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
             {newIsPublic ? 'Visible par tous sur ton profil' : 'Visible uniquement par toi'}
           </span>
         </div>
 
-        {msg && <div style={{ fontSize: '13px', color: msg.includes('Erreur') ? '#e50914' : '#4caf50', marginTop: '8px' }}>{msg}</div>}
+        {msg && <div style={{ fontSize: '13px', color: msg.includes('Erreur') ? 'var(--accent)' : '#4caf50', marginTop: '8px' }}>{msg}</div>}
       </div>
 
       {/* Liste des listes */}
       {lists.length === 0 ? (
-        <div style={{ color: '#555', fontStyle: 'italic', fontSize: '15px', textAlign: 'center', padding: '60px 0' }}>
+        <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '15px', textAlign: 'center', padding: '60px 0' }}>
           Aucune liste pour l'instant. Crée-en une !
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {lists.map(list => (
-            <div key={list.id} style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '20px' }}>
+            <div key={list.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: list.items?.length > 0 ? '16px' : '0' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
@@ -114,9 +114,9 @@ export default function ListsPage() {
                     <button
                       onClick={() => handleTogglePublic(list)}
                       style={{
-                        background: list.isPublic ? '#4caf5022' : '#44444422',
-                        color: list.isPublic ? '#4caf50' : '#888',
-                        border: `1px solid ${list.isPublic ? '#4caf50' : '#444'}`,
+                        background: list.isPublic ? '#4caf5022' : 'var(--border)',
+                        color: list.isPublic ? '#4caf50' : 'var(--text-muted)',
+                        border: `1px solid ${list.isPublic ? '#4caf50' : 'var(--border)'}`,
                         borderRadius: '20px', padding: '2px 10px',
                         fontSize: '11px', fontWeight: 600, cursor: 'pointer'
                       }}
@@ -124,13 +124,13 @@ export default function ListsPage() {
                       {list.isPublic ? 'Publique' : 'Privée'}
                     </button>
                   </div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                     {list.items?.length || 0} film{list.items?.length !== 1 ? 's' : ''}
                   </div>
                 </div>
                 <button
                   onClick={() => handleDelete(list.id)}
-                  style={{ background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '6px', padding: '6px 14px', fontSize: '13px', cursor: 'pointer' }}
+                  style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '6px', padding: '6px 14px', fontSize: '13px', cursor: 'pointer' }}
                 >
                   Supprimer
                 </button>
@@ -143,9 +143,20 @@ export default function ListsPage() {
                     <div
                       key={item.id}
                       onClick={() => navigate(`/movie/${item.media?.tmdbId}`)}
-                      style={{ background: '#111', border: '1px solid #2a2a2a', borderRadius: '6px', padding: '6px 12px', fontSize: '13px', color: '#aaa', cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.color = '#fff'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#aaa'}
+                      style={{ 
+                        background: 'var(--bg3)', 
+                        border: '1px solid var(--border)', 
+                        borderRadius: '6px', 
+                        padding: '6px 12px', 
+                        fontSize: '13px', 
+                        color: 'var(--text)', 
+                        cursor: 'pointer',
+                        opacity: 0.85,
+                        transition: 'opacity 0.2s'
+                      }}
+                      // Remplacement de l'hover JS par une transition d'opacité élégante
+                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '0.85'}
                     >
                       {item.media?.title || `Film #${item.mediaId}`}
                     </div>

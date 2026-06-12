@@ -4,22 +4,22 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 
 const s = {
-  page: { maxWidth: '800px', margin: '0 auto', padding: '40px 24px' },
+  page: { maxWidth: '800px', margin: '0 auto', padding: '40px 24px', color: 'var(--text)' },
   title: { fontSize: '22px', fontWeight: 700, marginBottom: '24px' },
-  card: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '16px 20px', marginBottom: '10px', display: 'flex', gap: '14px', alignItems: 'center', cursor: 'pointer' },
-  avatar: { width: '44px', height: '44px', borderRadius: '50%', background: '#e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px', flexShrink: 0 },
+  card: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 20px', marginBottom: '10px', display: 'flex', gap: '14px', alignItems: 'center', cursor: 'pointer' },
+  avatar: { width: '44px', height: '44px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px', flexShrink: 0, color: '#fff' },
   username: { fontSize: '15px', fontWeight: 600, marginBottom: '4px' },
-  preview: { fontSize: '13px', color: '#666' },
-  empty: { textAlign: 'center', padding: '60px', color: '#555', background: '#1a1a1a', borderRadius: '10px', border: '1px solid #2e2e2e' },
-  chatBox: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '0', marginTop: '16px', display: 'flex', flexDirection: 'column', height: '500px' },
-  chatHeader: { padding: '16px 20px', borderBottom: '1px solid #2e2e2e', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '10px' },
+  preview: { fontSize: '13px', color: 'var(--text-muted)' },
+  empty: { textAlign: 'center', padding: '60px', color: 'var(--text-muted)', background: 'var(--bg2)', borderRadius: '10px', border: '1px solid var(--border)' },
+  chatBox: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '0', marginTop: '16px', display: 'flex', flexDirection: 'column', height: '500px' },
+  chatHeader: { padding: '16px 20px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '15px', display: 'flex', alignItems: 'center', gap: '10px' },
   messages: { flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '10px' },
-  msgMe: { alignSelf: 'flex-end', background: '#e50914', color: '#fff', borderRadius: '12px 12px 2px 12px', padding: '10px 14px', maxWidth: '65%', fontSize: '14px' },
-  msgOther: { alignSelf: 'flex-start', background: '#2a2a2a', color: '#eee', borderRadius: '12px 12px 12px 2px', padding: '10px 14px', maxWidth: '65%', fontSize: '14px' },
-  inputRow: { padding: '14px 20px', borderTop: '1px solid #2e2e2e', display: 'flex', gap: '10px' },
-  input: { flex: 1, background: '#111', border: '1px solid #2e2e2e', borderRadius: '8px', padding: '10px 14px', color: '#fff', fontSize: '14px' },
-  btn: { background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
-  backBtn: { background: 'transparent', border: 'none', color: '#aaa', fontSize: '13px', cursor: 'pointer', marginBottom: '16px', padding: 0 },
+  msgMe: { alignSelf: 'flex-end', background: 'var(--accent)', color: '#fff', borderRadius: '12px 12px 2px 12px', padding: '10px 14px', maxWidth: '65%', fontSize: '14px' },
+  msgOther: { alignSelf: 'flex-start', background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '12px 12px 12px 2px', padding: '10px 14px', maxWidth: '65%', fontSize: '14px' },
+  inputRow: { padding: '14px 20px', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px' },
+  input: { flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 14px', color: 'var(--text)', fontSize: '14px', fontFamily: 'inherit' },
+  btn: { background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' },
+  backBtn: { background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', marginBottom: '16px', padding: 0 },
 }
 
 export default function MessagesPage() {
@@ -31,9 +31,9 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const location = useLocation() // ← Hook ajouté ici
+  const location = useLocation()
 
-  // useEffect mis à jour pour intercepter la conversation passée par l'état de navigation
+  // Intercepter la conversation passée par l'état de navigation
   useEffect(() => {
     api.get('/messages')
       .then(r => {
@@ -44,7 +44,7 @@ export default function MessagesPage() {
         }
       })
       .finally(() => setLoading(false))
-  }, [])
+  }, [location.state])
 
   useEffect(() => {
     if (!activeConv) return
@@ -85,13 +85,13 @@ export default function MessagesPage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#888' }}>Chargement...</div>
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Chargement...</div>
 
   if (activeConv) {
     const other = getOtherUser(activeConv)
     return (
       <div style={s.page}>
-        <button style={s.backBtn} onClick={() => setActiveConv(null)}>Retour aux conversations</button>
+        <button style={s.backBtn} onClick={() => setActiveConv(null)}>← Retour aux conversations</button>
         <div style={s.chatBox}>
           <div style={s.chatHeader}>
             <div style={{ ...s.avatar, width: '32px', height: '32px', fontSize: '14px' }}>
@@ -103,7 +103,7 @@ export default function MessagesPage() {
           </div>
           <div style={s.messages}>
             {messages.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#555', fontSize: '14px', margin: 'auto' }}>
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', margin: 'auto' }}>
                 Aucun message. Commencez la conversation !
               </div>
             )}
@@ -119,7 +119,7 @@ export default function MessagesPage() {
               value={newMessage}
               onChange={e => setNewMessage(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ecrire un message..."
+              placeholder="Écrire un message..."
             />
             <button style={s.btn} onClick={handleSend} disabled={sending}>
               {sending ? '...' : 'Envoyer'}
@@ -136,7 +136,7 @@ export default function MessagesPage() {
       {conversations.length === 0 ? (
         <div style={s.empty}>
           <p style={{ fontSize: '14px' }}>Aucune conversation pour l'instant.</p>
-          <p style={{ fontSize: '13px', color: '#444', marginTop: '8px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '8px', opacity: 0.8 }}>
             Rendez-vous sur le profil d'un membre que vous suivez mutuellement pour lui envoyer un message.
           </p>
         </div>

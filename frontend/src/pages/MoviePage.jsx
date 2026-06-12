@@ -20,7 +20,7 @@ function StarRating({ value, onChange, readonly = false }) {
           style={{
             fontSize: readonly ? '16px' : '24px',
             cursor: readonly ? 'default' : 'pointer',
-            color: n <= (hovered || value) ? '#f5c518' : '#444',
+            color: n <= (hovered || value) ? '#f5c518' : 'var(--border)',
             transition: 'color 0.15s',
             userSelect: 'none',
           }}
@@ -36,6 +36,10 @@ export default function MoviePage() {
   const navigate = useNavigate()
   const [movie, setMovie] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // Trailer
+  const [trailerKey, setTrailerKey] = useState(null)
+  const [showTrailer, setShowTrailer] = useState(false)
 
   // Rating
   const [myRating, setMyRating] = useState(0)
@@ -56,14 +60,14 @@ export default function MoviePage() {
   // Statut de visionnage
   const [watchStatus, setWatchStatus] = useState(null)
 
-  // Commentaires (stockés par reviewId)
+  // Commentaires
   const [comments, setComments] = useState({})
   const [commentText, setCommentText] = useState({})
 
-  // Ajout du state des likes
+  // Likes
   const [likes, setLikes] = useState({})
 
-  // Ajout du state pour le signalement inséré ici :
+  // Signalement
   const [reportMsg, setReportMsg] = useState({})
 
   useEffect(() => {
@@ -76,11 +80,19 @@ export default function MoviePage() {
       .then(r => setRatingStats(r.data))
       .catch(() => {})
 
-    // Mise à jour du chargement des reviews pour inclure les likes
     api.get(`/reviews/movie/${id}`)
       .then(r => {
         setReviews(r.data)
         r.data.forEach(review => loadLikes(review.id))
+      })
+      .catch(() => {})
+
+    // Charger la bande annonce
+    api.get(`/movies/${id}/videos`)
+      .then(r => {
+        const trailer = r.data.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+          || r.data.find(v => v.site === 'YouTube')
+        if (trailer) setTrailerKey(trailer.key)
       })
       .catch(() => {})
 
@@ -95,7 +107,6 @@ export default function MoviePage() {
     }
   }, [id, me])
 
-  // Ajout des fonctions de gestion des likes
   async function loadLikes(reviewId) {
     try {
       const r = await api.get(`/likes/${reviewId}`)
@@ -142,7 +153,6 @@ export default function MoviePage() {
     } catch {}
   }
 
-  // Fonction handleReport insérée après handleDeleteComment :
   async function handleReport(reviewId) {
     const reason = prompt('Raison du signalement (spoiler, insulte, etc.) :')
     if (!reason?.trim()) return
@@ -159,8 +169,8 @@ export default function MoviePage() {
 
   async function handleWatchStatus(status) {
     try {
-      await api.post('/watchstatus', { 
-        mediaId: parseInt(id), 
+      await api.post('/watchstatus', {
+        mediaId: parseInt(id),
         status,
         runtime: movie?.runtime || 0,
         title: movie?.title,
@@ -221,17 +231,16 @@ export default function MoviePage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: '#888' }}>Chargement…</div>
-  if (!movie) return <div style={{ padding: '80px', textAlign: 'center', color: '#888' }}>Film non trouvé.</div>
+  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Chargement…</div>
+  if (!movie) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Film non trouvé.</div>
 
   const genres = movie.genres?.map(g => g.name).join(', ')
   const runtime = movie.runtime ? `${Math.floor(movie.runtime / 60)}h${movie.runtime % 60}min` : null
-
   const director = movie.credits?.crew?.find(p => p.job === 'Director')?.name
   const casting = movie.credits?.cast?.slice(0, 5).map(a => a.name).join(', ')
 
   return (
-    <div style={{ background: '#0f0f0f', minHeight: '100vh', color: '#fff' }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
       {movie.backdrop_path && (
         <div style={{
           height: '380px',
@@ -240,66 +249,101 @@ export default function MoviePage() {
           backgroundPosition: 'center top',
           position: 'relative',
         }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(15,15,15,0.1) 0%, #0f0f0f 100%)' }} />
+          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, var(--bg) 100%)' }} />
         </div>
       )}
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 24px 80px', marginTop: movie.backdrop_path ? '-140px' : '32px', position: 'relative' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '40px' }}>
+        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '32px' }}>
           {movie.poster_path && (
             <img src={`${POSTER}${movie.poster_path}`} alt={movie.title}
-              style={{ width: '180px', borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.8)', flexShrink: 0 }} />
+              style={{ width: '180px', borderRadius: '10px', boxShadow: '0 12px 40px rgba(0,0,0,0.5)', flexShrink: 0, border: '1px solid var(--border)' }} />
           )}
           <div style={{ flex: 1, minWidth: '240px', paddingBottom: '8px' }}>
             <h1 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '10px', lineHeight: 1.2 }}>{movie.title}</h1>
-            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '14px', color: '#888', fontSize: '14px' }}>
+            <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '14px', color: 'var(--text-muted)', fontSize: '14px' }}>
               {movie.release_date && <span>{movie.release_date.slice(0, 4)}</span>}
               {runtime && <span>{runtime}</span>}
               {movie.vote_average > 0 && <span style={{ color: '#f5c518' }}>★ {movie.vote_average.toFixed(1)} / 10</span>}
               {genres && <span>{genres}</span>}
             </div>
-
-            {director && <div style={{ color: '#ccc', fontSize: '14px', marginTop: '8px' }}><strong>Réalisateur :</strong> {director}</div>}
-            {casting && <div style={{ color: '#ccc', fontSize: '14px', marginTop: '4px' }}><strong>Casting :</strong> {casting}</div>}
-
+            {director && <div style={{ color: 'var(--text)', fontSize: '14px', marginTop: '8px' }}><strong>Réalisateur :</strong> {director}</div>}
+            {casting && <div style={{ color: 'var(--text)', fontSize: '14px', marginTop: '4px' }}><strong>Casting :</strong> {casting}</div>}
             <div style={{ marginTop: '14px' }}>
               {movie.tagline && (
-                <p style={{ color: '#e50914', fontStyle: 'italic', fontSize: '15px', marginBottom: '14px', marginTop: 0 }}>« {movie.tagline} »</p>
+                <p style={{ color: 'var(--accent)', fontStyle: 'italic', fontSize: '15px', marginBottom: '14px', marginTop: 0 }}>« {movie.tagline} »</p>
               )}
               {movie.overview && (
-                <p style={{ color: '#ccc', lineHeight: 1.7, fontSize: '15px', maxWidth: '600px', margin: 0 }}>{movie.overview}</p>
+                <p style={{ color: 'var(--text)', opacity: 0.9, lineHeight: 1.7, fontSize: '15px', maxWidth: '600px', margin: 0 }}>{movie.overview}</p>
               )}
             </div>
+
+            {/* Bouton bande annonce */}
+            {trailerKey && (
+              <button
+                onClick={() => setShowTrailer(v => !v)}
+                style={{
+                  marginTop: '18px',
+                  background: showTrailer ? 'var(--bg3)' : 'var(--accent)',
+                  color: showTrailer ? 'var(--text)' : '#fff',
+                  border: showTrailer ? '1px solid var(--border)' : 'none',
+                  borderRadius: '8px',
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <span style={{ fontSize: '16px' }}>▶</span>
+                {showTrailer ? 'Masquer la bande annonce' : 'Voir la bande annonce'}
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Actions — connecté ou pas */}
+        {/* Player YouTube */}
+        {showTrailer && trailerKey && (
+          <div style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', position: 'relative', paddingTop: '56.25%' }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`}
+              title="Bande annonce"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
+            />
+          </div>
+        )}
+
+        {/* Actions */}
         {me ? (
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '40px', padding: '24px', background: '#1a1a1a', borderRadius: '12px', border: '1px solid #2e2e2e' }}>
+          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '40px', padding: '24px', background: 'var(--bg2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
             <div>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ma note</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ma note</div>
               <StarRating value={myRating} onChange={handleRate} />
               {ratingMsg && <div style={{ fontSize: '12px', color: '#4caf50', marginTop: '4px' }}>{ratingMsg}</div>}
             </div>
 
-            <div style={{ width: '1px', height: '40px', background: '#2e2e2e' }} />
+            <div style={{ width: '1px', height: '40px', background: 'var(--border)' }} />
 
             <div>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note communauté</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Note communauté</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '22px', fontWeight: 700, color: '#f5c518' }}>
                   {ratingStats.average ? parseFloat(ratingStats.average).toFixed(1) : '—'}
                 </span>
-                <span style={{ fontSize: '13px', color: '#666' }}>{ratingStats.count} vote{ratingStats.count !== 1 ? 's' : ''}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{ratingStats.count} vote{ratingStats.count !== 1 ? 's' : ''}</span>
               </div>
             </div>
 
-            {/* Section Bibliothèque */}
-            <div style={{ width: '1px', height: '40px', background: '#2e2e2e' }} />
+            <div style={{ width: '1px', height: '40px', background: 'var(--border)' }} />
+
             <div>
-              <div style={{ fontSize: '12px', color: '#888', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ma bibliothèque</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ma bibliothèque</div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {[
                   { key: 'a_voir', label: 'À voir' },
@@ -311,9 +355,9 @@ export default function MoviePage() {
                     key={key}
                     onClick={() => handleWatchStatus(key)}
                     style={{
-                      background: watchStatus === key ? '#e50914' : '#2a2a2a',
-                      color: watchStatus === key ? '#fff' : '#aaa',
-                      border: `1px solid ${watchStatus === key ? '#e50914' : '#444'}`,
+                      background: watchStatus === key ? 'var(--accent)' : 'var(--bg3)',
+                      color: watchStatus === key ? '#fff' : 'var(--text-muted)',
+                      border: `1px solid ${watchStatus === key ? 'var(--accent)' : 'var(--border)'}`,
                       borderRadius: '6px',
                       padding: '6px 12px',
                       fontSize: '12px',
@@ -327,22 +371,22 @@ export default function MoviePage() {
               </div>
             </div>
 
-            <div style={{ width: '1px', height: '40px', background: '#2e2e2e' }} />
+            <div style={{ width: '1px', height: '40px', background: 'var(--border)' }} />
 
             <div style={{ position: 'relative' }}>
               <button onClick={() => setShowListMenu(v => !v)}
-                style={{ background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                 + Ajouter à une liste
               </button>
               {listMsg && <div style={{ fontSize: '12px', color: '#4caf50', marginTop: '4px' }}>{listMsg}</div>}
               {showListMenu && (
-                <div style={{ position: 'absolute', top: '44px', left: 0, background: '#1e1e1e', border: '1px solid #333', borderRadius: '8px', minWidth: '200px', zIndex: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}>
+                <div style={{ position: 'absolute', top: '44px', left: 0, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', minWidth: '200px', zIndex: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
                   {lists.length === 0 ? (
-                    <div style={{ padding: '14px 16px', color: '#888', fontSize: '13px' }}>Aucune liste. Crée-en une d'abord.</div>
+                    <div style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>Aucune liste. Crée-en une d'abord.</div>
                   ) : lists.map(list => (
                     <div key={list.id} onClick={() => handleAddToList(list.id)}
-                      style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '14px', borderBottom: '1px solid #2a2a2a' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#2a2a2a'}
+                      style={{ padding: '12px 16px', cursor: 'pointer', fontSize: '14px', borderBottom: '1px solid var(--border)', color: 'var(--text)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                       {list.name}
                     </div>
@@ -352,75 +396,72 @@ export default function MoviePage() {
             </div>
           </div>
         ) : (
-          <div style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '20px', marginBottom: '40px', textAlign: 'center' }}>
-            <span style={{ color: '#888', fontSize: '14px' }}>
-              <span onClick={() => navigate('/login')} style={{ color: '#e50914', cursor: 'pointer', fontWeight: 600 }}>Connecte-toi</span>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '40px', textAlign: 'center' }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+              <span onClick={() => navigate('/login')} style={{ color: 'var(--accent)', cursor: 'pointer', fontWeight: 600 }}>Connecte-toi</span>
               {' '}pour noter, critiquer et ajouter ce film à tes listes.
             </span>
           </div>
         )}
 
-        {/* Écrire une critique — connecté seulement */}
+        {/* Écrire une critique */}
         {me && (
-          <div style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', marginBottom: '32px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Écrire une critique</h3>
             <textarea
               value={reviewText}
               onChange={e => setReviewText(e.target.value)}
               placeholder="Partagez votre avis sur ce film…"
               rows={4}
-              style={{ width: '100%', background: '#111', border: '1px solid #333', borderRadius: '8px', color: '#fff', padding: '12px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '12px', fontSize: '14px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }}
             />
-            <div style={{ fontSize: '12px', color: '#555', marginTop: '6px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
               Markdown supporté — **gras**, *italique*, # titre
             </div>
-            
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
               <button onClick={handleSubmitReview} disabled={submittingReview || !reviewText.trim()}
-                style={{ background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: reviewText.trim() ? 'pointer' : 'not-allowed', opacity: reviewText.trim() ? 1 : 0.5 }}>
+                style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: reviewText.trim() ? 'pointer' : 'not-allowed', opacity: reviewText.trim() ? 1 : 0.5 }}>
                 {submittingReview ? 'Publication…' : 'Publier'}
               </button>
-              {reviewMsg && <span style={{ fontSize: '13px', color: reviewMsg.includes('Erreur') || reviewMsg.includes('déjà') ? '#e50914' : '#4caf50' }}>{reviewMsg}</span>}
+              {reviewMsg && <span style={{ fontSize: '13px', color: reviewMsg.includes('Erreur') || reviewMsg.includes('déjà') ? 'var(--accent)' : '#4caf50' }}>{reviewMsg}</span>}
             </div>
           </div>
         )}
 
-        {/* Liste des critiques — visible par tous */}
+        {/* Critiques */}
         <div>
           <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>
-            Critiques {reviews.length > 0 && <span style={{ color: '#666', fontWeight: 400, fontSize: '15px' }}>({reviews.length})</span>}
+            Critiques {reviews.length > 0 && <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '15px' }}>({reviews.length})</span>}
           </h3>
           {reviews.length === 0 ? (
-            <div style={{ color: '#555', fontStyle: 'italic', fontSize: '14px' }}>Aucune critique pour ce film. Sois le premier !</div>
+            <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '14px' }}>Aucune critique pour ce film. Sois le premier !</div>
           ) : reviews.map(review => (
-            <div key={review.id} style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
+            <div key={review.id} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#e50914', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0, color: '#fff' }}>
                     {review.user?.username?.[0]?.toUpperCase() || '?'}
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '14px' }}>{review.user?.username || 'Utilisateur'}</div>
-                    <div style={{ fontSize: '12px', color: '#555' }}>{new Date(review.createdAt).toLocaleDateString('fr-FR')}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(review.createdAt).toLocaleDateString('fr-FR')}</div>
                   </div>
                 </div>
-
-                {/* Remplacement du bouton supprimer d'origine par le bloc de boutons conditionnels : */}
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   {review.featured && (
-                    <span style={{ background: '#e50914', color: '#fff', borderRadius: '6px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
+                    <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '6px', padding: '3px 10px', fontSize: '12px', fontWeight: 700 }}>
                       Coup de coeur
                     </span>
                   )}
                   {me && review.user?.id === me.id && (
                     <button onClick={() => handleDeleteReview(review.id)}
-                      style={{ background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                      style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}>
                       Supprimer
                     </button>
                   )}
                   {me && review.user?.id !== me.id && (
                     <button onClick={() => handleReport(review.id)}
-                      style={{ background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                      style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}>
                       Signaler
                     </button>
                   )}
@@ -429,20 +470,19 @@ export default function MoviePage() {
                   )}
                 </div>
               </div>
-              
-              <div className="markdown-content">
+
+              <div className="markdown-content" style={{ color: 'var(--text)', lineHeight: 1.6 }}>
                 <ReactMarkdown>{review.content}</ReactMarkdown>
               </div>
 
-              {/* Bloc de boutons Like */}
               {me && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
                   <button
                     onClick={() => handleToggleLike(review.id)}
                     style={{
                       background: 'transparent',
-                      border: `1px solid ${likes[review.id]?.liked ? '#e50914' : '#444'}`,
-                      color: likes[review.id]?.liked ? '#e50914' : '#888',
+                      border: `1px solid ${likes[review.id]?.liked ? 'var(--accent)' : 'var(--border)'}`,
+                      color: likes[review.id]?.liked ? 'var(--accent)' : 'var(--text-muted)',
                       borderRadius: '6px',
                       padding: '4px 12px',
                       fontSize: '13px',
@@ -455,25 +495,24 @@ export default function MoviePage() {
                 </div>
               )}
 
-              {/* Discussions */}
-              <div style={{ marginTop: '16px', borderTop: '1px solid #2a2a2a', paddingTop: '12px' }}>
+              <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
                 <div
                   onClick={() => loadComments(review.id)}
-                  style={{ fontSize: '13px', color: '#666', cursor: 'pointer', marginBottom: '10px' }}
+                  style={{ fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer', marginBottom: '10px' }}
                 >
                   {comments[review.id] ? `${comments[review.id].length} commentaire(s)` : 'Voir les commentaires'}
                 </div>
                 {comments[review.id] && (
                   <>
                     {comments[review.id].map(c => (
-                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', padding: '8px 12px', background: '#111', borderRadius: '6px' }}>
+                      <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', padding: '8px 12px', background: 'var(--bg3)', borderRadius: '6px', border: '1px solid var(--border)' }}>
                         <div>
-                          <span style={{ fontWeight: 600, fontSize: '13px', color: '#ccc' }}>{c.user.username} </span>
-                          <span style={{ fontSize: '13px', color: '#888' }}>{c.content}</span>
+                          <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)' }}>{c.user.username} </span>
+                          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{c.content}</span>
                         </div>
                         {me && c.user.id === me.id && (
                           <button onClick={() => handleDeleteComment(review.id, c.id)}
-                            style={{ background: 'transparent', border: 'none', color: '#555', fontSize: '12px', cursor: 'pointer' }}>
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
                             ✕
                           </button>
                         )}
@@ -486,10 +525,10 @@ export default function MoviePage() {
                           onChange={e => setCommentText(prev => ({ ...prev, [review.id]: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && handleSubmitComment(review.id)}
                           placeholder="Ajouter un commentaire…"
-                          style={{ flex: 1, background: '#111', border: '1px solid #333', borderRadius: '6px', color: '#fff', padding: '8px 12px', fontSize: '13px', fontFamily: 'inherit' }}
+                          style={{ flex: 1, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', padding: '8px 12px', fontSize: '13px', fontFamily: 'inherit' }}
                         />
                         <button onClick={() => handleSubmitComment(review.id)}
-                          style={{ background: '#e50914', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                          style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '6px', padding: '8px 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                           Envoyer
                         </button>
                       </div>
@@ -497,7 +536,6 @@ export default function MoviePage() {
                   </>
                 )}
               </div>
-
             </div>
           ))}
         </div>

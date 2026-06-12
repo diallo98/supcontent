@@ -6,20 +6,26 @@ const POSTER = 'https://image.tmdb.org/t/p/w300'
 const POSTER_SMALL = 'https://image.tmdb.org/t/p/w92'
 
 const s = {
-  page: { maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' },
+  page: { maxWidth: '1200px', margin: '0 auto', padding: '32px 24px', color: 'var(--text)' },
   title: { fontSize: '22px', fontWeight: 700, marginBottom: '24px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' },
-  poster: { width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block', background: '#242424' },
-  noPoster: { width: '100%', aspectRatio: '2/3', background: '#242424', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' },
+  poster: { width: '100%', aspectRatio: '2/3', objectFit: 'cover', display: 'block', background: 'var(--bg3)' },
+  noPoster: { width: '100%', aspectRatio: '2/3', background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', color: 'var(--text-muted)' },
   info: { padding: '10px' },
-  movieTitle: { fontSize: '13px', fontWeight: 600, marginBottom: '4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' },
-  year: { fontSize: '12px', color: '#888' },
+  movieTitle: { fontSize: '13px', fontWeight: 600, marginBottom: '4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', color: 'var(--text)' },
+  year: { fontSize: '12px', color: 'var(--text-muted)' },
   rating: { fontSize: '12px', color: '#ffd700' },
-  empty: { textAlign: 'center', padding: '80px', color: '#666' },
+  empty: { textAlign: 'center', padding: '80px', color: 'var(--text-muted)' },
   section: { marginBottom: '40px' },
-  sectionTitle: { fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: '#ccc' },
-  btn: { background: '#e50914', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' },
-  select: { background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#f1f1f1', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' },
+  sectionTitle: { fontSize: '18px', fontWeight: 700, marginBottom: '16px', color: 'var(--text)' },
+  input: { flex: 1, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' },
+  btn: { background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' },
+  select: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' },
+  tabBtn: { color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' },
+  suggestionBox: { position: 'absolute', top: '46px', left: 0, right: 0, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', overflow: 'hidden' },
+  suggestionItem: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border)' },
+  listCard: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' },
+  badge: { background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: 'var(--text-muted)' }
 }
 
 const currentYear = new Date().getFullYear()
@@ -29,7 +35,6 @@ export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
   
-  // États existants (Films)
   const [query, setQuery] = useState(searchParams.get('q') || '')
   const [yearFilter, setYearFilter] = useState(searchParams.get('year') || '')
   const [genreFilter, setGenreFilter] = useState(searchParams.get('genre') || '')
@@ -42,7 +47,6 @@ export default function SearchPage() {
   const suggestTimeout = useRef(null)
   const wrapperRef = useRef(null)
 
-  // Nouveaux états (Listes)
   const [tab, setTab] = useState('movies') // 'movies' | 'lists'
   const [listQuery, setListQuery] = useState('')
   const [publicLists, setPublicLists] = useState([])
@@ -53,7 +57,6 @@ export default function SearchPage() {
     api.get('/movies/genres').then(r => setGenres(r.data || []))
   }, [])
 
-  // Écoute des paramètres d'URL pour la recherche de films
   useEffect(() => {
     const q = searchParams.get('q') || ''
     const year = searchParams.get('year') || ''
@@ -74,7 +77,6 @@ export default function SearchPage() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Fonction de recherche de listes
   async function searchLists(q) {
     setListsLoading(true)
     try {
@@ -85,7 +87,6 @@ export default function SearchPage() {
     }
   }
 
-  // Exécution de la recherche de films dynamique
   async function doSearch(q, year, genre) {
     if (!q && !genre && !year) return
     setLoading(true)
@@ -126,7 +127,6 @@ export default function SearchPage() {
     navigate(`/movie/${movie.id}`)
   }
 
-  // Soumission du formulaire films
   function handleSubmit(e) {
     e.preventDefault()
     setShowSuggestions(false)
@@ -141,25 +141,25 @@ export default function SearchPage() {
 
   return (
     <div style={s.page}>
-      <h1 style={s.title}>Recherche de films</h1>
+      <h1 style={s.title}>Recherche</h1>
 
-      {/* Système d'onglets */}
+      {/* Système d'onglets réactif aux variables CSS */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         <button
           onClick={() => setTab('movies')}
-          style={{ background: tab === 'movies' ? '#e50914' : '#1a1a1a', color: '#fff', border: '1px solid #2e2e2e', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+          style={{ ...s.tabBtn, background: tab === 'movies' ? 'var(--accent)' : 'var(--bg2)', borderColor: tab === 'movies' ? 'var(--accent)' : 'var(--border)' }}
         >
           Films
         </button>
         <button
           onClick={() => { setTab('lists'); searchLists('') }}
-          style={{ background: tab === 'lists' ? '#e50914' : '#1a1a1a', color: '#fff', border: '1px solid #2e2e2e', borderRadius: '8px', padding: '8px 20px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
+          style={{ ...s.tabBtn, background: tab === 'lists' ? 'var(--accent)' : 'var(--bg2)', borderColor: tab === 'lists' ? 'var(--accent)' : 'var(--border)' }}
         >
           Listes publiques
         </button>
       </div>
 
-      {/* Vue Onglet : FILMS */}
+      {/* Onglet : FILMS */}
       {tab === 'movies' && (
         <>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -170,33 +170,29 @@ export default function SearchPage() {
                   value={query}
                   onChange={handleQueryChange}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+                  style={s.input}
                 />
                 <button style={s.btn} type="submit">Rechercher</button>
               </form>
 
               {showSuggestions && suggestions.length > 0 && (
-                <div style={{
-                  position: 'absolute', top: '46px', left: 0, right: 0,
-                  background: '#1e1e1e', border: '1px solid #333', borderRadius: '8px',
-                  zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.6)', overflow: 'hidden'
-                }}>
+                <div style={s.suggestionBox}>
                   {suggestions.map(movie => (
                     <div
                       key={movie.id}
                       onClick={() => handleSelectSuggestion(movie)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid #2a2a2a' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#2a2a2a'}
+                      style={s.suggestionItem}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       {movie.poster_path ? (
                         <img src={`${POSTER_SMALL}${movie.poster_path}`} alt="" style={{ width: '32px', height: '48px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }} />
                       ) : (
-                        <div style={{ width: '32px', height: '48px', background: '#333', borderRadius: '4px', flexShrink: 0 }} />
+                        <div style={{ width: '32px', height: '48px', background: 'var(--bg3)', borderRadius: '4px', flexShrink: 0 }} />
                       )}
                       <div>
-                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#fff' }}>{movie.title}</div>
-                        <div style={{ fontSize: '12px', color: '#888' }}>{movie.release_date?.slice(0, 4) || '—'}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>{movie.title}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{movie.release_date?.slice(0, 4) || '—'}</div>
                       </div>
                       {movie.vote_average > 0 && (
                         <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#ffd700' }}>★ {movie.vote_average.toFixed(1)}</div>
@@ -207,7 +203,6 @@ export default function SearchPage() {
               )}
             </div>
 
-            {/* Filtres Films */}
             <select style={s.select} value={genreFilter} onChange={e => setGenreFilter(e.target.value)}>
               <option value="">Tous les genres</option>
               {genres.map(g => (
@@ -247,7 +242,7 @@ export default function SearchPage() {
         </>
       )}
 
-      {/* Vue Onglet : LISTES PUBLIQUES */}
+      {/* Onglet : LISTES PUBLIQUES */}
       {tab === 'lists' && (
         <div>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
@@ -256,7 +251,7 @@ export default function SearchPage() {
               value={listQuery}
               onChange={e => setListQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && searchLists(listQuery)}
-              style={{ flex: 1, maxWidth: '400px', background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '8px', color: '#fff', padding: '10px 14px', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+              style={{ ...s.input, maxWidth: '400px' }}
             />
             <button style={s.btn} onClick={() => searchLists(listQuery)}>Rechercher</button>
           </div>
@@ -269,20 +264,22 @@ export default function SearchPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {publicLists.map(list => (
-              <div key={list.id} style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '12px', padding: '20px' }}>
+              <div key={list.id} style={s.listCard}>
                 <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '6px' }}>{list.name}</div>
-                <div style={{ fontSize: '13px', color: '#888', marginBottom: '10px' }}>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>
                   Par {list.user?.username || 'Anonyme'} · {list.items.length} film{list.items.length !== 1 ? 's' : ''}
                 </div>
                 {list.items.length > 0 && (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {list.items.slice(0, 5).map(item => (
-                      <span key={item.id} style={{ background: '#242424', border: '1px solid #333', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: '#aaa' }}>
+                      <span key={item.id} style={s.badge}>
                         {item.media?.title || `Film #${item.mediaId}`}
                       </span>
                     ))}
                     {list.items.length > 5 && (
-                      <span style={{ fontSize: '12px', color: '#555', padding: '4px 0' }}>+{list.items.length - 5} autres</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>
+                        +{list.items.length - 5} autres
+                      </span>
                     )}
                   </div>
                 )}
@@ -301,9 +298,9 @@ function MovieGrid({ movies }) {
       {movies.map(movie => (
         <Link to={`/movie/${movie.id}`} key={movie.id} style={{ textDecoration: 'none', color: 'inherit' }}>
           <div
-            style={{ background: '#1a1a1a', borderRadius: '10px', overflow: 'hidden', border: '1px solid #2e2e2e', transition: 'transform 0.15s, border-color 0.15s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.borderColor = '#e50914' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = '#2e2e2e' }}
+            style={{ background: 'var(--bg2)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)', transition: 'transform 0.15s, border-color 0.15s', boxSizing: 'border-box' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.03)'; e.currentTarget.style.borderColor = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.borderColor = 'var(--border)' }}
           >
             {movie.poster_path
               ? <img src={`${POSTER}${movie.poster_path}`} alt={movie.title} style={s.poster} />

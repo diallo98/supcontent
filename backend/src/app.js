@@ -3,6 +3,7 @@ const cors = require('cors')
 const dotenv = require('dotenv')
 const rateLimit = require('express-rate-limit')
 const passport = require('./middlewares/passport')
+const path = require('path')
 const authRoutes = require('./routes/authRoutes')
 const userRoutes = require('./routes/userRoutes')
 const mediaRoutes = require('./routes/mediaRoutes')
@@ -14,7 +15,7 @@ const watchStatusRoutes = require('./routes/watchStatusRoutes')
 const commentRoutes = require('./routes/commentRoutes')
 const likeRoutes = require('./routes/likeRoutes')
 const messageRoutes = require('./routes/messageRoutes')
-const moderationRoutes = require('./routes/moderationRoutes') // ← Ligne ajoutée
+const moderationRoutes = require('./routes/moderationRoutes')
 const notificationRoutes = require('./routes/notificationRoutes')
 const exportRoutes = require('./routes/exportRoutes');
 
@@ -30,6 +31,7 @@ const authLimiter = rateLimit({
 
 app.use(cors())
 app.use(express.json())
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 app.use(passport.initialize())
 
 // Routes
@@ -44,7 +46,7 @@ app.use('/api/watchstatus', watchStatusRoutes)
 app.use('/api/comments', commentRoutes)
 app.use('/api/likes', likeRoutes)
 app.use('/api/messages', messageRoutes)
-app.use('/api/moderation', moderationRoutes) // ← Ligne ajoutée
+app.use('/api/moderation', moderationRoutes)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/export', exportRoutes);
 
