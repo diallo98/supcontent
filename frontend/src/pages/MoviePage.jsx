@@ -74,6 +74,7 @@ export default function MoviePage() {
     setLoading(true)
     api.get(`/movies/${id}`)
       .then(r => setMovie(r.data))
+      .catch(() => setMovie(null))
       .finally(() => setLoading(false))
 
     api.get(`/ratings/movie/${id}`)
@@ -231,8 +232,29 @@ export default function MoviePage() {
     }
   }
 
-  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Chargement…</div>
-  if (!movie) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Film non trouvé.</div>
+  if (loading) return (
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', color: 'var(--text)' }}>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+      <div style={{ height: '380px', background: 'var(--bg2)', animation: 'pulse 1.5s infinite' }} />
+      <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 24px 80px', marginTop: '-140px', position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: '32px' }}>
+          <div style={{ width: '180px', height: '270px', borderRadius: '10px', background: 'var(--bg3)', flexShrink: 0, animation: 'pulse 1.5s infinite' }} />
+          <div style={{ flex: 1, minWidth: '240px', paddingBottom: '8px' }}>
+            <div style={{ width: '60%', height: '32px', background: 'var(--bg3)', borderRadius: '6px', marginBottom: '14px', animation: 'pulse 1.5s infinite' }} />
+            <div style={{ width: '40%', height: '14px', background: 'var(--bg3)', borderRadius: '4px', marginBottom: '16px', animation: 'pulse 1.5s infinite' }} />
+            <div style={{ width: '100%', height: '14px', background: 'var(--bg3)', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s infinite' }} />
+            <div style={{ width: '90%', height: '14px', background: 'var(--bg3)', borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+  if (!movie) return (
+    <div style={{ maxWidth: '500px', margin: '0 auto', padding: '100px 24px', textAlign: 'center', color: 'var(--text)' }}>
+      <h1 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '12px' }}>Film introuvable</h1>
+      <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Ce film n'existe pas ou n'est plus disponible.</p>
+    </div>
+  )
 
   const genres = movie.genres?.map(g => g.name).join(', ')
   const runtime = movie.runtime ? `${Math.floor(movie.runtime / 60)}h${movie.runtime % 60}min` : null

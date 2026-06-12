@@ -15,7 +15,7 @@ const STATUS_COLORS = {
   a_voir: '#3b82f6',
   en_cours: '#f59e0b',
   termine: '#4caf50',
-  abandonne: '#888',
+  abandonne: 'var(--text-muted)',
 }
 
 function formatTime(minutes) {
@@ -55,23 +55,23 @@ export default function LibraryPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px', color: '#fff' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 24px', color: 'var(--text)' }}>
       <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>Ma bibliothèque</h1>
-      <p style={{ color: '#666', fontSize: '14px', marginBottom: '32px' }}>
+      <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '32px' }}>
         {library.length} film{library.length !== 1 ? 's' : ''} dans ta collection
       </p>
 
       {/* Tableau de bord */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '32px' }}>
         {Object.entries(STATUS_LABELS).map(([key, label]) => (
-          <div key={key} style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '16px 20px', textAlign: 'center' }}>
+          <div key={key} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: '28px', fontWeight: 800, color: STATUS_COLORS[key] }}>{counts[key]}</div>
-            <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{label}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{label}</div>
           </div>
         ))}
-        <div style={{ background: '#1a1a1a', border: '1px solid #2e2e2e', borderRadius: '10px', padding: '16px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#e50914' }}>{formatTime(totalMinutes)}</div>
-          <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>Temps regardé</div>
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '10px', padding: '16px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--accent)' }}>{formatTime(totalMinutes)}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Temps regardé</div>
         </div>
       </div>
 
@@ -86,11 +86,12 @@ export default function LibraryPage() {
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setActiveFilter(key)}
             style={{
-              background: activeFilter === key ? '#e50914' : '#1a1a1a',
-              color: activeFilter === key ? '#fff' : '#aaa',
-              border: `1px solid ${activeFilter === key ? '#e50914' : '#2e2e2e'}`,
+              background: activeFilter === key ? 'var(--accent)' : 'var(--bg2)',
+              color: activeFilter === key ? '#fff' : 'var(--text)',
+              border: `1px solid ${activeFilter === key ? 'var(--accent)' : 'var(--border)'}`,
               borderRadius: '20px', padding: '8px 16px',
               fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+              transition: 'background 0.2s, color 0.2s, border-color 0.2s'
             }}>
             {label} <span style={{ opacity: 0.7 }}>({counts[key]})</span>
           </button>
@@ -99,9 +100,9 @@ export default function LibraryPage() {
 
       {/* Liste des films */}
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>Chargement…</div>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>Chargement…</div>
       ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', color: '#555', fontStyle: 'italic', padding: '60px 0' }}>
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontStyle: 'italic', padding: '60px 0' }}>
           Aucun film dans cette catégorie.
         </div>
       ) : (
@@ -113,7 +114,7 @@ export default function LibraryPage() {
                 <img src={`${POSTER}${item.media.posterPath}`} alt={item.media.title}
                   style={{ width: '100%', borderRadius: '8px', display: 'block', aspectRatio: '2/3', objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: '100%', aspectRatio: '2/3', background: '#1a1a1a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontSize: '12px' }}>
+                <div style={{ width: '100%', aspectRatio: '2/3', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
                   Pas d'affiche
                 </div>
               )}
@@ -134,7 +135,7 @@ export default function LibraryPage() {
                   {formatTime(item.media.runtime)}
                 </div>
               )}
-              <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 600, color: '#ccc', lineHeight: 1.3 }}>
+              <div style={{ marginTop: '8px', fontSize: '12px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
                 {item.media.title}
               </div>
             </div>

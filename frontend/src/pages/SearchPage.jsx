@@ -25,16 +25,38 @@ const s = {
   suggestionBox: { position: 'absolute', top: '46px', left: 0, right: 0, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 50, boxShadow: '0 8px 24px rgba(0,0,0,0.5)', overflow: 'hidden' },
   suggestionItem: { display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border)' },
   listCard: { background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' },
-  badge: { background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: 'var(--text-muted)' }
+  badge: { background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px 10px', fontSize: '12px', color: 'var(--text-muted)' },
+  loadMoreBtn: { background: 'var(--bg2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '8px', padding: '10px 28px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }
 }
 
 const currentYear = new Date().getFullYear()
 const years = Array.from({ length: 50 }, (_, i) => currentYear - i)
 
+function PosterSkeleton() {
+  return (
+    <div style={{ background: 'var(--bg2)', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div style={{ width: '100%', aspectRatio: '2/3', background: 'var(--bg3)', animation: 'pulse 1.5s infinite' }} />
+      <div style={{ padding: '10px' }}>
+        <div style={{ width: '80%', height: '12px', background: 'var(--bg3)', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s infinite' }} />
+        <div style={{ width: '40%', height: '10px', background: 'var(--bg3)', borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
+      </div>
+    </div>
+  )
+}
+
+function ListSkeleton() {
+  return (
+    <div style={s.listCard}>
+      <div style={{ width: '160px', height: '16px', background: 'var(--bg3)', borderRadius: '4px', marginBottom: '10px', animation: 'pulse 1.5s infinite' }} />
+      <div style={{ width: '220px', height: '12px', background: 'var(--bg3)', borderRadius: '4px', animation: 'pulse 1.5s infinite' }} />
+    </div>
+  )
+}
+
 export default function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  
+
   const [query, setQuery] = useState(searchParams.get('q') || '')
   const [yearFilter, setYearFilter] = useState(searchParams.get('year') || '')
   const [genreFilter, setGenreFilter] = useState(searchParams.get('genre') || '')
@@ -42,18 +64,30 @@ export default function SearchPage() {
   const [results, setResults] = useState([])
   const [popular, setPopular] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [popularPage, setPopularPage] = useState(1)
+  const [popularTotalPages, setPopularTotalPages] = useState(1)
   const [suggestions, setSuggestions] = useState([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const suggestTimeout = useRef(null)
   const wrapperRef = useRef(null)
 
-  const [tab, setTab] = useState('movies') // 'movies' | 'lists'
+  const [tab, setTab] = useState('movies')
   const [listQuery, setListQuery] = useState('')
   const [publicLists, setPublicLists] = useState([])
   const [listsLoading, setListsLoading] = useState(false)
+  const [listsLoadingMore, setListsLoadingMore] = useState(false)
+  const [listsHasMore, setListsHasMore] = useState(false)
 
   useEffect(() => {
-    api.get('/movies/popular').then(r => setPopular(r.data.results || []))
+    setLoading(true)
+    api.get('/movies/popular', { params: { page: 1 } }).then(r => {
+      setPopular(r.data.results || [])
+      setPopularPage(1)
+      setPopularTotalPages(r.data.total_pages || 1)
+    }).finally(() => setLoading(false))
     api.get('/movies/genres').then(r => setGenres(r.data || []))
   }, [])
 
@@ -64,7 +98,7 @@ export default function SearchPage() {
     setYearFilter(year)
     setGenreFilter(genre)
     setQuery(q)
-    if (q || genre || year) doSearch(q, year, genre)
+    if (q || genre || year) doSearch(q, year, genre, 1, false)
   }, [searchParams])
 
   useEffect(() => {
@@ -77,28 +111,59 @@ export default function SearchPage() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  async function searchLists(q) {
-    setListsLoading(true)
+  async function searchLists(q, skip = 0, append = false) {
+    if (append) setListsLoadingMore(true)
+    else setListsLoading(true)
     try {
-      const { data } = await api.get('/lists/public', { params: { q } })
-      setPublicLists(data)
+      const { data } = await api.get('/lists/public', { params: { q, skip } })
+      setPublicLists(prev => append ? [...prev, ...data.lists] : data.lists)
+      setListsHasMore(data.hasMore)
     } finally {
       setListsLoading(false)
+      setListsLoadingMore(false)
     }
   }
 
-  async function doSearch(q, year, genre) {
+  function loadMoreLists() {
+    searchLists(listQuery, publicLists.length, true)
+  }
+
+  async function doSearch(q, year, genre, pageNum, append) {
     if (!q && !genre && !year) return
-    setLoading(true)
+    if (append) setLoadingMore(true)
+    else setLoading(true)
     try {
-      const params = {}
+      const params = { page: pageNum }
       if (q) params.query = q
       if (year) params.year = year
       if (genre) params.genre = genre
       const { data } = await api.get('/movies/search', { params })
-      setResults(data.results || [])
+      setResults(prev => append ? [...prev, ...(data.results || [])] : (data.results || []))
+      setPage(pageNum)
+      setTotalPages(data.total_pages || 1)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
+    }
+  }
+
+  function loadMoreResults() {
+    const q = searchParams.get('q') || ''
+    const year = searchParams.get('year') || ''
+    const genre = searchParams.get('genre') || ''
+    doSearch(q, year, genre, page + 1, true)
+  }
+
+  async function loadMorePopular() {
+    setLoadingMore(true)
+    try {
+      const nextPage = popularPage + 1
+      const { data } = await api.get('/movies/popular', { params: { page: nextPage } })
+      setPopular(prev => [...prev, ...(data.results || [])])
+      setPopularPage(nextPage)
+      setPopularTotalPages(data.total_pages || 1)
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -141,9 +206,10 @@ export default function SearchPage() {
 
   return (
     <div style={s.page}>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+
       <h1 style={s.title}>Recherche</h1>
 
-      {/* Système d'onglets réactif aux variables CSS */}
       <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
         <button
           onClick={() => setTab('movies')}
@@ -152,14 +218,13 @@ export default function SearchPage() {
           Films
         </button>
         <button
-          onClick={() => { setTab('lists'); searchLists('') }}
+          onClick={() => { setTab('lists'); if (publicLists.length === 0) searchLists('') }}
           style={{ ...s.tabBtn, background: tab === 'lists' ? 'var(--accent)' : 'var(--bg2)', borderColor: tab === 'lists' ? 'var(--accent)' : 'var(--border)' }}
         >
           Listes publiques
         </button>
       </div>
 
-      {/* Onglet : FILMS */}
       {tab === 'movies' && (
         <>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -218,7 +283,11 @@ export default function SearchPage() {
             </select>
           </div>
 
-          {loading && <div style={s.empty}>Recherche en cours…</div>}
+          {loading && (
+            <div style={s.grid}>
+              {[...Array(10)].map((_, i) => <PosterSkeleton key={i} />)}
+            </div>
+          )}
 
           {!loading && results.length > 0 && (
             <div style={s.section}>
@@ -226,6 +295,13 @@ export default function SearchPage() {
                 {searchParams.get('q') ? `Résultats pour « ${searchParams.get('q')} »` : 'Résultats de votre recherche'}
               </p>
               <MovieGrid movies={results} />
+              {page < totalPages && (
+                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                  <button style={s.loadMoreBtn} onClick={loadMoreResults} disabled={loadingMore}>
+                    {loadingMore ? 'Chargement…' : 'Charger plus'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -233,16 +309,22 @@ export default function SearchPage() {
             <div style={s.empty}>Aucun résultat pour cette recherche.</div>
           )}
 
-          {!hasSearchActive && popular.length > 0 && (
+          {!loading && !hasSearchActive && popular.length > 0 && (
             <div style={s.section}>
               <p style={s.sectionTitle}>Films populaires</p>
               <MovieGrid movies={popular} />
+              {popularPage < popularTotalPages && (
+                <div style={{ textAlign: 'center', marginTop: '24px' }}>
+                  <button style={s.loadMoreBtn} onClick={loadMorePopular} disabled={loadingMore}>
+                    {loadingMore ? 'Chargement…' : 'Charger plus'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </>
       )}
 
-      {/* Onglet : LISTES PUBLIQUES */}
       {tab === 'lists' && (
         <div>
           <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
@@ -256,36 +338,50 @@ export default function SearchPage() {
             <button style={s.btn} onClick={() => searchLists(listQuery)}>Rechercher</button>
           </div>
 
-          {listsLoading && <div style={s.empty}>Recherche en cours…</div>}
+          {listsLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[...Array(3)].map((_, i) => <ListSkeleton key={i} />)}
+            </div>
+          )}
 
           {!listsLoading && publicLists.length === 0 && (
             <div style={s.empty}>Aucune liste publique trouvée.</div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {publicLists.map(list => (
-              <div key={list.id} style={s.listCard}>
-                <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '6px' }}>{list.name}</div>
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                  Par {list.user?.username || 'Anonyme'} · {list.items.length} film{list.items.length !== 1 ? 's' : ''}
-                </div>
-                {list.items.length > 0 && (
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {list.items.slice(0, 5).map(item => (
-                      <span key={item.id} style={s.badge}>
-                        {item.media?.title || `Film #${item.mediaId}`}
-                      </span>
-                    ))}
-                    {list.items.length > 5 && (
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>
-                        +{list.items.length - 5} autres
-                      </span>
-                    )}
+          {!listsLoading && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {publicLists.map(list => (
+                <div key={list.id} style={s.listCard}>
+                  <div style={{ fontWeight: 700, fontSize: '16px', marginBottom: '6px' }}>{list.name}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                    Par {list.user?.username || 'Anonyme'} · {list.items.length} film{list.items.length !== 1 ? 's' : ''}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {list.items.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      {list.items.slice(0, 5).map(item => (
+                        <span key={item.id} style={s.badge}>
+                          {item.media?.title || `Film #${item.mediaId}`}
+                        </span>
+                      ))}
+                      {list.items.length > 5 && (
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>
+                          +{list.items.length - 5} autres
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {listsHasMore && !listsLoading && (
+            <div style={{ textAlign: 'center', marginTop: '24px' }}>
+              <button style={s.loadMoreBtn} onClick={loadMoreLists} disabled={listsLoadingMore}>
+                {listsLoadingMore ? 'Chargement…' : 'Charger plus'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -160,9 +160,24 @@ export default function ProfilePage() {
     }
   }
 
-  console.log('isMe:', isMe, '| id:', id, '| me:', me?.id)
-
-  if (loading) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Chargement...</div>
+  if (loading) return (
+    <div style={s.page}>
+      <style>{`@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
+      <div style={s.header}>
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg3)', flexShrink: 0, animation: 'pulse 1.5s infinite' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ width: '200px', height: '24px', background: 'var(--bg3)', borderRadius: '6px', marginBottom: '12px', animation: 'pulse 1.5s infinite' }} />
+            <div style={{ display: 'flex', gap: '24px' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} style={{ width: '60px', height: '36px', background: 'var(--bg3)', borderRadius: '6px', animation: 'pulse 1.5s infinite' }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
   if (!profile) return <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-muted)' }}>Utilisateur non trouvé.</div>
 
   return (
@@ -278,9 +293,9 @@ export default function ProfilePage() {
           ) : (activeTab === 'followers' ? followers : followingList).map(u => (
             <div key={u.id} onClick={() => navigate(`/profile/${u.id}`)}
               style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', flexShrink: 0, overflow: 'hidden', color: '#fff' }}>
                 {u.avatarUrl
-                  ? <img src={u.avatarUrl} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                  ? <img src={u.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   : u.username?.[0]?.toUpperCase()}
               </div>
               <span style={{ fontSize: '14px', fontWeight: 600 }}>{u.username}</span>

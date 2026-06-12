@@ -145,24 +145,44 @@ const unfollowUser = async (req, res) => {
 }
 
 const searchUsers = async (req, res) => {
-  const { q } = req.query
-  if (!q?.trim()) return res.json([])
+  const { q, skip = 0 } = req.query
+  if (!q?.trim()) return res.json({ users: [], hasMore: false })
 
   try {
+    const take = 24
     const users = await prisma.user.findMany({
       where: {
-        username: { contains: q.trim(), mode: 'insensitive' }
+        username: { contains: q.trim(), mode: 'insensitive' },
+        id: { not: req.user.userId }
       },
       select: {
         id: true,
         username: true,
         bio: true,
         avatarUrl: true,
-        _count: { select: { followers: true } }
+        _count: { select: { followers: true } },
+        followers: {
+          where: { followerId: req.user.userId },
+          select: { followerId: true }
+        }
       },
-      take: 20
+      take: take + 1,
+      skip: parseInt(skip)
     })
-    return res.json(users)
+
+    const hasMore = users.length > take
+    const sliced = users.slice(0, take)
+
+    const result = sliced.map(u => ({
+      id: u.id,
+      username: u.username,
+      bio: u.bio,
+      avatarUrl: u.avatarUrl,
+      _count: u._count,
+      isFollowing: u.followers.length > 0
+    }))
+
+    return res.json({ users: result, hasMore })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Erreur serveur' })

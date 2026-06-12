@@ -9,7 +9,7 @@ const TMDB_API_KEY = process.env.TMDB_API_KEY
 // Rechercher des films (Bascule dynamique entre Search et Discover selon les filtres)
 const searchMovies = async (req, res) => {
   try {
-    const { query, year, genre } = req.query
+    const { query, year, genre, page = 1 } = req.query
     let endpoint, params
 
     if (genre && !query) {
@@ -21,6 +21,7 @@ const searchMovies = async (req, res) => {
         with_genres: genre,
         primary_release_year: year || undefined,
         sort_by: 'popularity.desc',
+        page,
       }
     } else {
       // Recherche textuelle classique (avec ou sans année)
@@ -33,6 +34,7 @@ const searchMovies = async (req, res) => {
         language: 'fr-FR',
         query,
         year: year || undefined,
+        page,
       }
     }
 
@@ -82,10 +84,10 @@ const getMovieById = async (req, res) => {
 // Films populaires
 const getPopularMovies = async (req, res) => {
   try {
+    const { page = 1 } = req.query
     const response = await axios.get(`${TMDB_BASE_URL}/movie/popular`, {
-      params: { api_key: TMDB_API_KEY, language: 'fr-FR' }
+      params: { api_key: TMDB_API_KEY, language: 'fr-FR', page }
     })
-
     res.json(response.data)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -103,6 +105,7 @@ const getGenres = async (req, res) => {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
+
 const getMovieVideos = async (req, res) => {
   try {
     const { id } = req.params

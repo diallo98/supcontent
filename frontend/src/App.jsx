@@ -12,6 +12,7 @@ import MembersPage from './pages/MembersPage'
 import LibraryPage from './pages/LibraryPage'
 import MessagesPage from './pages/MessagesPage'
 import AdminPage from './pages/AdminPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="/library" element={<PrivateRoute><LibraryPage /></PrivateRoute>} />
         <Route path="/messages" element={<PrivateRoute><MessagesPage /></PrivateRoute>} />
         <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
   )

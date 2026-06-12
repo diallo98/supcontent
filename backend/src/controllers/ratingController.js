@@ -20,11 +20,27 @@ const upsertRating = async (req, res) => {
       create: { tmdbId: mediaId, title: `Film ${mediaId}` },
     });
 
+    const existing = await prisma.rating.findUnique({
+      where: { userId_mediaId: { userId, mediaId: media.id } }
+    });
+
     const rating = await prisma.rating.upsert({
       where: { userId_mediaId: { userId, mediaId: media.id } },
       update: { score },
       create: { userId, mediaId: media.id, score },
     });
+
+    // On ne crée une activité que pour une nouvelle note (pas une mise à jour)
+    if (!existing) {
+      await prisma.activity.create({
+        data: {
+          userId,
+          actionType: 'rated',
+          targetType: 'media',
+          targetId: media.id
+        }
+      });
+    }
 
     return res.status(200).json(rating);
   } catch (err) {

@@ -29,6 +29,16 @@ const createReview = async (req, res) => {
       include: { user: { select: { id: true, username: true } } }
     });
 
+    // Ajout de l'activité
+    await prisma.activity.create({
+      data: {
+        userId,
+        actionType: 'reviewed',
+        targetType: 'media',
+        targetId: media.id
+      }
+    });
+
     return res.status(201).json(review);
   } catch (err) {
     console.error(err);

@@ -58,6 +58,19 @@ const addMovieToList = async (req, res) => {
     const item = await prisma.listItem.create({
       data: { listId, mediaId: media.id }
     })
+
+    // Ajout de l'activité uniquement si la liste est publique
+    if (list.isPublic) {
+      await prisma.activity.create({
+        data: {
+          userId,
+          actionType: 'listed',
+          targetType: 'media',
+          targetId: media.id
+        }
+      })
+    }
+
     return res.status(201).json(item)
   } catch (err) {
     if (err.code === 'P2002') {
@@ -129,9 +142,10 @@ const updateList = async (req, res) => {
   }
 }
 
-// Rechercher des listes publiques
+// Rechercher des listes publiques (avec pagination)
 const searchPublicLists = async (req, res) => {
-  const { q } = req.query
+  const { q, skip = 0 } = req.query
+  const take = 24
   try {
     const lists = await prisma.list.findMany({
       where: {
@@ -139,13 +153,16 @@ const searchPublicLists = async (req, res) => {
         ...(q ? { name: { contains: q, mode: 'insensitive' } } : {})
       },
       orderBy: { id: 'desc' },
-      take: 20,
+      take: take + 1,
+      skip: parseInt(skip),
       include: {
         user: { select: { id: true, username: true } },
-        items: true
+        items: { include: { media: { select: { tmdbId: true, title: true, posterPath: true } } } }
       }
     })
-    return res.json(lists)
+    const hasMore = lists.length > take
+    const sliced = lists.slice(0, take)
+    return res.json({ lists: sliced, hasMore })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Erreur serveur' })
